@@ -219,7 +219,6 @@ fun WallpaperPickerScreen(
 
     val favoriteIds by WallpaperRepository.favoriteIds.collectAsState()
     val prefs = remember { Prefs(context) }
-    val isAutoDailyEnabled by prefs.autoDailyWallpaperEnabled.collectAsState(initial = false)
     val wallpaperColumns by prefs.wallpaperColumns.collectAsState(initial = 2)
 
     LaunchedEffect(Unit) {
@@ -388,19 +387,6 @@ fun WallpaperPickerScreen(
                         query = searchQuery,
                         onQueryChange = { searchQuery = it },
                     )
-                }
-
-                if (pageCategoryId.equals("all", ignoreCase = true)) {
-                    item(span = { GridItemSpan(maxLineSpan) }) {
-                        DailyWallpaperToggleCard(
-                            enabled = isAutoDailyEnabled,
-                            onToggle = { enabled ->
-                                coroutineScope.launch {
-                                    DailyWallpaperManager.setEnabled(context, enabled)
-                                }
-                            },
-                        )
-                    }
                 }
 
                 if (isLoadingCatalog && pageWallpapers.isEmpty()) {
@@ -629,77 +615,6 @@ fun WallpaperPickerScreen(
                         }
                     }
                 }
-            )
-        }
-    }
-}
-
-@Composable
-private fun DailyWallpaperToggleCard(
-    enabled: Boolean,
-    onToggle: (Boolean) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val isGlassActive = dev.viagarawallpapers.ui.theme.LocalGlassThemeActive.current
-    val colorScheme = MaterialTheme.colorScheme
-    dev.viagarawallpapers.ui.theme.GlassCard(
-        modifier = modifier.fillMaxWidth(),
-        cornerRadiusDp = 16.dp,
-        isGlassActive = isGlassActive,
-        fallbackColor = if (enabled) colorScheme.primaryContainer.copy(alpha = 0.35f) else colorScheme.surfaceVariant.copy(alpha = 0.40f),
-        border = BorderStroke(
-            width = 1.dp,
-            color = if (enabled) colorScheme.primary.copy(alpha = 0.50f) else colorScheme.outlineVariant.copy(alpha = 0.30f),
-        ),
-        onClick = { onToggle(!enabled) },
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(38.dp)
-                    .clip(CircleShape)
-                    .background(if (enabled) colorScheme.primary else colorScheme.surfaceVariant),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.AutoAwesome,
-                    contentDescription = null,
-                    tint = if (enabled) colorScheme.onPrimary else colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp),
-                )
-            }
-
-            Spacer(Modifier.width(14.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.daily_wallpaper_title),
-                    color = colorScheme.onSurface,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text = stringResource(R.string.daily_wallpaper_desc),
-                    color = colorScheme.onSurfaceVariant,
-                    fontSize = 12.sp,
-                    lineHeight = 15.sp,
-                )
-            }
-
-            Spacer(Modifier.width(10.dp))
-
-            Switch(
-                checked = enabled,
-                onCheckedChange = onToggle,
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = colorScheme.onPrimary,
-                    checkedTrackColor = colorScheme.primary,
-                ),
             )
         }
     }

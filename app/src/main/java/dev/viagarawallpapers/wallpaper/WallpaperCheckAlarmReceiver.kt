@@ -25,9 +25,11 @@ class WallpaperCheckAlarmReceiver : BroadcastReceiver() {
         // Perform wallpaper catalog check on background thread
         CoroutineScope(Dispatchers.IO).launch {
             try {
+                DailyWallpaperManager.checkExternalWallpaperChanges(appCtx)
+                DailyWallpaperManager.checkAndAdvanceIfNewDay(appCtx, this)
                 WallpaperRepository.loadCatalog(appCtx)
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to load catalog during periodic wallpaper check", e)
+                Log.e(TAG, "Failed during periodic wallpaper check", e)
             }
         }
     }
