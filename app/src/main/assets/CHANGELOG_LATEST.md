@@ -1,3 +1,3 @@
-### 🌌 Wallpapers FOSS v1.0.9
+### 🌌 Wallpapers FOSS v1.0.10
 
-- **Envio de Wallpapers:** Novo botão minimalista no cabeçalho ao lado da grade de colunas para sugerir e adicionar papéis de parede via GitHub Issues.
+- **Envio Direto de Wallpapers:** Abertura direta do formulário de submissão de wallpapers sem tela intermediária de seleção.

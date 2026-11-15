@@ -17,6 +17,7 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.Toast
 import android.widget.VideoView
+import java.net.URLEncoder
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
@@ -545,7 +546,20 @@ fun WallpaperPickerScreen(
             onAddWallpaper = {
                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 runCatching {
-                    val url = "https://github.com/S-Marcos-S/wallpapers-foss/issues/new?template=add_wallpaper.yml"
+                    val issueTitle = "[Wallpaper]: "
+                    val issueBody = buildString {
+                        appendLine("### 🖼️ Adicionar Papéis de Parede ao Catálogo")
+                        appendLine()
+                        appendLine("Anexe as imagens da sua galeria abaixo:")
+                        appendLine("*(Toque no ícone de imagem/anexo do GitHub para selecionar fotos em resolução original)*")
+                        appendLine()
+                        appendLine("---")
+                        appendLine("- **Autor / Créditos:** ")
+                        appendLine("- **Título (opcional):** ")
+                    }
+                    val encodedTitle = URLEncoder.encode(issueTitle, "UTF-8")
+                    val encodedBody = URLEncoder.encode(issueBody, "UTF-8")
+                    val url = "https://github.com/S-Marcos-S/wallpapers-foss/issues/new?title=$encodedTitle&body=$encodedBody&labels=wallpaper-submission"
                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
                         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     }
