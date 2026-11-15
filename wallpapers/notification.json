@@ -1,20 +1,18 @@
 {
-  "id": "notif_1794735963",
-  "title": "O Bruxo chegou no app! ⚽🔥",
-  "message": "10 novos papéis de parede do Bruxo, telas OLED e mais!",
-  "count": 10,
+  "id": "notif_1794746573",
+  "title": "Novas paisagens em Aquarela!",
+  "message": "Renove sua tela com 8 novos wallpapers de natureza!",
+  "count": 8,
   "wallpaper_ids": [
-    "tg_44391",
-    "tg_44390",
-    "tg_44383",
-    "tg_44382",
-    "tg_44381",
-    "tg_44380",
-    "tg_44379",
-    "tg_44368",
-    "tg_44367",
-    "tg_44366"
+    "tg_46330",
+    "tg_46329",
+    "tg_46328",
+    "tg_46327",
+    "tg_46326",
+    "tg_46325",
+    "tg_46324",
+    "tg_46323"
   ],
-  "timestamp": 1794735963459,
+  "timestamp": 1794746573824,
   "generated_by": "gemini"
 }
