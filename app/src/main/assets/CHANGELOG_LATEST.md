@@ -1,4 +1,3 @@
-### 🌌 Wallpapers FOSS v1.0.8
+### 🌌 Wallpapers FOSS v1.0.9
 
-- **Cabeçalho em Vidro Translúcido:** O cabeçalho agora possui efeito vidro fluido em todas as abas, permitindo que os papéis de parede passem por detrás dele ao rolar.
-- **Botão Voltar ao Topo:** Botão minimalista redondo que surge dinamicamente na lateral ao rolar a tela para cima, facilitando o retorno ao topo da página.
+- **Envio de Wallpapers:** Novo botão minimalista no cabeçalho ao lado da grade de colunas para sugerir e adicionar papéis de parede via GitHub Issues.

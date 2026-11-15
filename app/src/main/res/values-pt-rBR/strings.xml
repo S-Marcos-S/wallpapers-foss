@@ -35,6 +35,7 @@
     <string name="wallpaper_hint_pinch_pan">Movimento de pinça para zoom • Arraste para enquadrar</string>
     <string name="wallpaper_action_reset_crop">Redefinir</string>
     <string name="wallpaper_columns_desc">Alternar colunas de wallpapers (atualmente %1$d)</string>
+    <string name="wallpaper_add_submission_desc">Enviar novos papéis de parede pelo GitHub</string>
 
     <!-- Wallpaper Categories -->
     <string name="wallpaper_category_all">Todos</string>

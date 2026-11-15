@@ -35,6 +35,7 @@
     <string name="wallpaper_hint_pinch_pan">Pinch to zoom • Drag to frame</string>
     <string name="wallpaper_action_reset_crop">Reset</string>
     <string name="wallpaper_columns_desc">Toggle wallpaper columns (currently %1$d)</string>
+    <string name="wallpaper_add_submission_desc">Submit new wallpapers via GitHub</string>
 
     <!-- Wallpaper Categories -->
     <string name="wallpaper_category_all">All</string>
