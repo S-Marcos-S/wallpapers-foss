@@ -542,6 +542,16 @@ fun WallpaperPickerScreen(
                     prefs.setWallpaperColumns(nextColumns)
                 }
             },
+            onAddWallpaper = {
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                runCatching {
+                    val url = "https://github.com/S-Marcos-S/wallpapers-foss/issues/new?template=add_wallpaper.yml"
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(intent)
+                }
+            },
             onOpenGallery = {
                 try {
                     val intent = Intent(Intent.ACTION_SET_WALLPAPER)
@@ -2152,6 +2162,7 @@ private fun GlassHeader(
     isScrolled: Boolean,
     wallpaperColumns: Int,
     onToggleColumns: () -> Unit,
+    onAddWallpaper: () -> Unit,
     onOpenGallery: () -> Unit,
     onOpenSettings: () -> Unit,
     categories: List<WallpaperCategory>,
@@ -2247,6 +2258,7 @@ private fun GlassHeader(
                 },
                 actions = {
                     val columnsDesc = stringResource(R.string.wallpaper_columns_desc, wallpaperColumns)
+                    val addWallpaperDesc = stringResource(R.string.wallpaper_add_submission_desc)
                     IconButton(
                         onClick = onToggleColumns,
                         modifier = Modifier.semantics { contentDescription = columnsDesc },
@@ -2279,6 +2291,40 @@ private fun GlassHeader(
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontSize = 11.sp,
+                            )
+                        }
+                    }
+                    IconButton(
+                        onClick = onAddWallpaper,
+                        modifier = Modifier.semantics { contentDescription = addWallpaperDesc },
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(30.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(
+                                    if (isGlassActive) {
+                                        Color.White.copy(alpha = if (isDark) 0.14f else 0.24f)
+                                    } else {
+                                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+                                    }
+                                )
+                                .border(
+                                    0.8.dp,
+                                    if (isGlassActive) {
+                                        Color.White.copy(alpha = if (isDark) 0.22f else 0.35f)
+                                    } else {
+                                        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
+                                    },
+                                    RoundedCornerShape(8.dp)
+                                ),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Add,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(17.dp),
                             )
                         }
                     }
