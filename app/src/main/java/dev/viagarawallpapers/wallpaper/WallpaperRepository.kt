@@ -591,6 +591,7 @@ object WallpaperRepository {
                 rawBitmap.recycle()
             }
 
+            DailyWallpaperManager.recordCurrentWallpaperIds(context)
             notifyWallpaperChanged()
             Unit
         }

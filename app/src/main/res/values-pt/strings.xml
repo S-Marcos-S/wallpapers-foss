@@ -60,6 +60,12 @@
     <string name="wallpaper_new_notification_multiple">%1$d novos papéis de parede foram adicionados ao catálogo.</string>
     <string name="daily_wallpaper_title">Papel de Parede Diário</string>
     <string name="daily_wallpaper_desc">Troca automaticamente o papel de parede todos os dias</string>
+    <string name="daily_wallpaper_target_title">Telas</string>
+    <string name="daily_wallpaper_target_both">Ambas</string>
+    <string name="daily_wallpaper_target_home">Inicial</string>
+    <string name="daily_wallpaper_target_lock">Bloqueio</string>
+    <string name="daily_wallpaper_stop_external_title">Pausar se alterado externamente</string>
+    <string name="daily_wallpaper_stop_external_desc">Para a troca na tela que receber outro wallpaper fora do app</string>
     <string name="daily_wallpaper_prompt">Gostou do papel de parede?</string>
     <string name="daily_wallpaper_like">Gostei (favoritar)</string>
     <string name="daily_wallpaper_dislike">Não gostei (trocar)</string>
@@ -92,6 +98,13 @@
     <!-- Settings & Updates -->
     <string name="settings_title">Configurações</string>
     <string name="settings_section_appearance">Aparência</string>
+    <string name="settings_section_daily_wallpaper">Papel de Parede Diário</string>
+    <string name="settings_section_storage">Armazenamento</string>
+    <string name="settings_storage_title">Armazenamento do app</string>
+    <string name="settings_storage_cache_label">Cache</string>
+    <string name="settings_storage_total_label">Total em uso</string>
+    <string name="settings_storage_clear_cache">Limpar cache</string>
+    <string name="settings_storage_cache_cleared">Cache limpo com sucesso</string>
     <string name="theme_system_dynamic_title">Dinâmico do Sistema</string>
     <string name="theme_glass_title">Vidro</string>
     <string name="theme_oled_black_title">OLED Preto Puro</string>

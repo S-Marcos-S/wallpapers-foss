@@ -60,6 +60,12 @@
     <string name="wallpaper_new_notification_multiple">%1$d new wallpapers have been added to the catalog.</string>
     <string name="daily_wallpaper_title">Daily Wallpaper</string>
     <string name="daily_wallpaper_desc">Automatically change wallpaper every day</string>
+    <string name="daily_wallpaper_target_title">Screens</string>
+    <string name="daily_wallpaper_target_both">Both</string>
+    <string name="daily_wallpaper_target_home">Home</string>
+    <string name="daily_wallpaper_target_lock">Lock</string>
+    <string name="daily_wallpaper_stop_external_title">Pause if changed externally</string>
+    <string name="daily_wallpaper_stop_external_desc">Stops auto change on screens with an external wallpaper</string>
     <string name="daily_wallpaper_prompt">Liked the wallpaper?</string>
     <string name="daily_wallpaper_like">Like (add to favorites)</string>
     <string name="daily_wallpaper_dislike">Dislike (next wallpaper)</string>
@@ -92,6 +98,13 @@
     <!-- Settings & Updates -->
     <string name="settings_title">Settings</string>
     <string name="settings_section_appearance">Appearance</string>
+    <string name="settings_section_daily_wallpaper">Daily Wallpaper</string>
+    <string name="settings_section_storage">Storage</string>
+    <string name="settings_storage_title">App storage</string>
+    <string name="settings_storage_cache_label">Cache</string>
+    <string name="settings_storage_total_label">Total used</string>
+    <string name="settings_storage_clear_cache">Clear cache</string>
+    <string name="settings_storage_cache_cleared">Cache cleared successfully</string>
     <string name="theme_system_dynamic_title">System Dynamic</string>
     <string name="theme_glass_title">Glass</string>
     <string name="theme_oled_black_title">OLED Black</string>

@@ -25,6 +25,10 @@ class Prefs(private val context: Context) {
         val IS_BETA_TESTER = booleanPreferencesKey("is_beta_tester")
         val ACTIVE_THEME = stringPreferencesKey("active_theme_id")
         val HAPTICS_ENABLED = booleanPreferencesKey("haptics_enabled")
+        val DAILY_WALLPAPER_TARGET = stringPreferencesKey("daily_wallpaper_target")
+        val DAILY_WALLPAPER_STOP_ON_EXTERNAL_CHANGE = booleanPreferencesKey("daily_wallpaper_stop_on_external_change")
+        val DAILY_WALLPAPER_LAST_SYSTEM_ID = intPreferencesKey("daily_wallpaper_last_system_id")
+        val DAILY_WALLPAPER_LAST_LOCK_ID = intPreferencesKey("daily_wallpaper_last_lock_id")
     }
 
     private val data get() = context.dataStore.data
@@ -61,6 +65,22 @@ class Prefs(private val context: Context) {
         it[Keys.HAPTICS_ENABLED] ?: true
     }.distinctUntilChanged()
 
+    val dailyWallpaperTarget: Flow<String> = data.map {
+        it[Keys.DAILY_WALLPAPER_TARGET] ?: "both"
+    }.distinctUntilChanged()
+
+    val dailyWallpaperStopOnExternalChange: Flow<Boolean> = data.map {
+        it[Keys.DAILY_WALLPAPER_STOP_ON_EXTERNAL_CHANGE] ?: true
+    }.distinctUntilChanged()
+
+    val dailyWallpaperLastSystemId: Flow<Int> = data.map {
+        it[Keys.DAILY_WALLPAPER_LAST_SYSTEM_ID] ?: -1
+    }.distinctUntilChanged()
+
+    val dailyWallpaperLastLockId: Flow<Int> = data.map {
+        it[Keys.DAILY_WALLPAPER_LAST_LOCK_ID] ?: -1
+    }.distinctUntilChanged()
+
     suspend fun setWallpaperColumns(columns: Int) {
         context.dataStore.edit { it[Keys.WALLPAPER_COLUMNS] = columns.coerceIn(2, 4) }
     }
@@ -91,5 +111,21 @@ class Prefs(private val context: Context) {
 
     suspend fun setHapticsEnabled(enabled: Boolean) {
         context.dataStore.edit { it[Keys.HAPTICS_ENABLED] = enabled }
+    }
+
+    suspend fun setDailyWallpaperTarget(target: String) {
+        context.dataStore.edit { it[Keys.DAILY_WALLPAPER_TARGET] = target }
+    }
+
+    suspend fun setDailyWallpaperStopOnExternalChange(enabled: Boolean) {
+        context.dataStore.edit { it[Keys.DAILY_WALLPAPER_STOP_ON_EXTERNAL_CHANGE] = enabled }
+    }
+
+    suspend fun setDailyWallpaperLastSystemId(id: Int) {
+        context.dataStore.edit { it[Keys.DAILY_WALLPAPER_LAST_SYSTEM_ID] = id }
+    }
+
+    suspend fun setDailyWallpaperLastLockId(id: Int) {
+        context.dataStore.edit { it[Keys.DAILY_WALLPAPER_LAST_LOCK_ID] = id }
     }
 }
