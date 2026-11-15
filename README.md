@@ -41,7 +41,7 @@ Coleção de papéis de parede projetados para celulares.
 <!-- START_WALLPAPER_STATS -->
 ## Painel de Estatísticas Diárias do Repositório
 
-> **Última atualização:** 14/11/2026 às 10:04 (Horário de Brasília) (`2026-11-14 13:04 UTC`)
+> **Última atualização:** 15/11/2026 às 08:48 (Horário de Brasília) (`2026-11-15 11:48 UTC`)
 
 ### Armazenamento e Consumo em Disco
 
@@ -49,16 +49,16 @@ Coleção de papéis de parede projetados para celulares.
 | :--- | :---: | :---: | :---: |
 | **Wallpapers em Alta Resolução (`wallpapers/full/`)** | **2.715 GB** | 2780.4 MB | 910 |
 | **Miniaturas Otimizadas (`wallpapers/thumbnails/`)** | **0.032 GB** | 32.9 MB | 910 |
-| **Total do Repositório** | **2.750 GB** | **2815.6 MB** | 1905 |
+| **Total do Repositório** | **2.754 GB** | **2820.2 MB** | 1908 |
 
 ### Status das Descrições e Classificação por IA
 
 | Método de Descrição | Quantidade | Porcentagem | Barra de Progresso |
 | :--- | :---: | :---: | :--- |
-| **IA Avançada (Google Gemini)** | **808** | **89.5%** | `█████████████████░░░` |
+| **IA Avançada (Google Gemini)** | **898** | **99.4%** | `███████████████████░` |
 | **IA Simples (MobileNetV3 / Local)** | **0** | **0.0%** | `░░░░░░░░░░░░░░░░░░░░` |
 | **Curadoria Manual (Humana)** | **5** | **0.6%** | `░░░░░░░░░░░░░░░░░░░░` |
-| **Pendentes / Sem Descrição** | **90** | **10.0%** | `█░░░░░░░░░░░░░░░░░░░` |
+| **Pendentes / Sem Descrição** | **0** | **0.0%** | `░░░░░░░░░░░░░░░░░░░░` |
 | **Total Geral no Catálogo** | **903** | **100%** | |
 
 ### Tipos de Papéis de Parede
@@ -70,21 +70,21 @@ Coleção de papéis de parede projetados para celulares.
 
 | Categoria | Quantidade | Proporção |
 | :--- | :---: | :---: |
-| `Oled` | **169** | 18.7% |
-| `Anime` | **129** | 14.3% |
-| `Abstract` | **109** | 12.1% |
-| `Images` | **89** | 9.9% |
-| `Nature` | **89** | 9.9% |
-| `Fantasy` | **61** | 6.8% |
-| `Minimal` | **53** | 5.9% |
+| `Oled` | **189** | 20.9% |
+| `Anime` | **146** | 16.2% |
+| `Abstract` | **114** | 12.6% |
+| `Nature` | **92** | 10.2% |
+| `Fantasy` | **72** | 8.0% |
+| `Animals` | **61** | 6.8% |
+| `Minimal` | **60** | 6.6% |
 | `Cars` | **48** | 5.3% |
 | `Space` | **46** | 5.1% |
-| `Animals` | **45** | 5.0% |
-| `Games` | **39** | 4.3% |
+| `Games` | **45** | 5.0% |
 | `Live` | **11** | 1.2% |
 | `City` | **9** | 1.0% |
 | `Cyberpunk` | **4** | 0.4% |
-| `Movies` | **1** | 0.1% |
+| `Images` | **3** | 0.3% |
+| `Movies` | **2** | 0.2% |
 | `Animation` | **1** | 0.1% |
 
 <!-- END_WALLPAPER_STATS -->
