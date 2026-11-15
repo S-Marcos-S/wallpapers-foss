@@ -129,11 +129,46 @@ def generate_video_thumbnail(video_path: str, thumb_path: str, max_h: int = 1080
         return False
 
 
+def calculate_image_dhash(image_path: str, hash_size: int = 8) -> Optional[int]:
+    """
+    Computes a 64-bit difference hash (dHash) of an image or video thumbnail.
+    Resizes to (hash_size + 1, hash_size) grayscale, compares adjacent pixels.
+    Very fast, robust against re-compression, metadata differences, and container noise.
+    """
+    try:
+        with Image.open(image_path) as img:
+            img = img.convert("L").resize((hash_size + 1, hash_size), Image.Resampling.BILINEAR)
+            if hasattr(img, "get_flattened_data"):
+                pixels = list(img.get_flattened_data())
+            else:
+                pixels = list(img.getdata())
+            diff = []
+            for row in range(hash_size):
+                row_offset = row * (hash_size + 1)
+                for col in range(hash_size):
+                    diff.append(pixels[row_offset + col] > pixels[row_offset + col + 1])
+            decimal_value = 0
+            for idx, bit in enumerate(diff):
+                if bit:
+                    decimal_value += 1 << idx
+            return decimal_value
+    except Exception as e:
+        print(f"Error calculating dhash for {image_path}: {e}")
+        return None
+
+
+def hamming_distance(h1: int, h2: int) -> int:
+    """Calculates the Hamming distance (number of differing bits) between two 64-bit hashes."""
+    return bin(h1 ^ h2).count("1")
+
+
 async def process_media_message(
     msg: Any,
     client: TelegramClient,
     existing_ids: Set[str],
     existing_hashes: Set[str],
+    existing_dhashes: Set[int],
+    recent_items: List[Dict[str, Any]],
 ) -> Optional[Dict[str, Any]]:
     """
     Validates, downloads, checks for duplicates via MD5 hash,
@@ -190,7 +225,6 @@ async def process_media_message(
     if media_type == "video" and doc_size < 1_200_000:
         print(f"Skipping low-res video stream preview ({doc_size} bytes): msg_id={msg.id}")
         return None
-        return None
 
     full_filename = f"{item_id}.{ext}"
     thumb_filename = f"{item_id}.webp"
@@ -224,6 +258,35 @@ async def process_media_message(
             os.remove(full_path)
         return None
 
+    # Robust visual deduplication by perceptual hash (dHash)
+    dhash = calculate_image_dhash(thumb_path)
+    if dhash is not None:
+        if dhash in existing_dhashes:
+            print(f"Duplicate content detected by perceptual visual hash ({hex(dhash)}). Skipping msg #{msg.id}")
+            if os.path.exists(full_path):
+                os.remove(full_path)
+            if os.path.exists(thumb_path):
+                os.remove(thumb_path)
+            return None
+
+        # Check near-identical visual hash against recent items (consecutive Telegram posts)
+        for recent in recent_items[-15:]:
+            recent_dhash = recent.get("dhash")
+            recent_msg_id = recent.get("msg_id", 0)
+            if recent_dhash is not None:
+                dist = hamming_distance(dhash, recent_dhash)
+                # If consecutive/near messages (|msg.id - recent_msg_id| <= 5) and visually nearly identical (dist <= 2)
+                if abs(msg.id - recent_msg_id) <= 5 and dist <= 2:
+                    print(
+                        f"Duplicate visual content detected in near messages "
+                        f"(msg #{msg.id} vs #{recent_msg_id}, Hamming distance={dist}). Skipping."
+                    )
+                    if os.path.exists(full_path):
+                        os.remove(full_path)
+                    if os.path.exists(thumb_path):
+                        os.remove(thumb_path)
+                    return None
+
     # Extract title from message text or caption if available
     title = msg.text.strip().split("\n")[0] if msg.text else ""
     if not title or len(title) > 40:
@@ -244,8 +307,13 @@ async def process_media_message(
         "content_hash": content_hash,
     }
 
+    if dhash is not None:
+        new_entry["visual_hash"] = f"{dhash:016x}"
+        existing_dhashes.add(dhash)
+
     existing_ids.add(item_id)
     existing_hashes.add(content_hash)
+    recent_items.append({"msg_id": msg.id, "dhash": dhash, "size": doc_size})
     return new_entry
 
 
@@ -277,6 +345,12 @@ async def main():
     existing_wallpapers = catalog.get("wallpapers", [])
     existing_ids: Set[str] = {w["id"] for w in existing_wallpapers}
     existing_hashes: Set[str] = {w.get("content_hash") for w in existing_wallpapers if w.get("content_hash")}
+    existing_dhashes: Set[int] = {
+        int(w["visual_hash"], 16)
+        for w in existing_wallpapers
+        if w.get("visual_hash")
+    }
+    recent_items: List[Dict[str, Any]] = []
 
     numeric_ids = [
         int(w["id"][3:])
@@ -285,7 +359,7 @@ async def main():
     ]
     min_catalog_id = min(numeric_ids) if numeric_ids else None
 
-    print(f"Catalog loaded: {len(existing_wallpapers)} wallpapers ({len(existing_hashes)} content hashes).")
+    print(f"Catalog loaded: {len(existing_wallpapers)} wallpapers ({len(existing_hashes)} content hashes, {len(existing_dhashes)} visual hashes).")
     if min_catalog_id:
         print(f"Oldest wallpaper in catalog: #tg_{min_catalog_id}")
 
@@ -301,7 +375,7 @@ async def main():
     # 1. Recent messages scan (New wallpapers)
     print(f"\n[Fase 1] Varrendo as {RECENT_SCAN_LIMIT} mensagens mais recentes do canal em busca de novidades...")
     async for msg in client.iter_messages(entity, limit=RECENT_SCAN_LIMIT):
-        item = await process_media_message(msg, client, existing_ids, existing_hashes)
+        item = await process_media_message(msg, client, existing_ids, existing_hashes, existing_dhashes, recent_items)
         if item:
             new_items.append(item)
             print(f" -> [Novo] {item['name']} ({item['type']})")
@@ -321,7 +395,7 @@ async def main():
                 historical_scanned += 1
                 oldest_scanned_id = min(oldest_scanned_id, msg.id)
 
-                item = await process_media_message(msg, client, existing_ids, existing_hashes)
+                item = await process_media_message(msg, client, existing_ids, existing_hashes, existing_dhashes, recent_items)
                 if item:
                     new_items.append(item)
                     print(f" -> [Histórico {len(new_items)}/{FALLBACK_BACKFILL_COUNT}] {item['name']} ({item['type']})")

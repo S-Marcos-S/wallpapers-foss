@@ -4644,47 +4644,6 @@
       "classified_by": "gemini"
     },
     {
-      "id": "tg_44454",
-      "name": "Gotas de Água no Vidro Embaçado",
-      "author": "Wallpaper HD/4K (Amanda)",
-      "author_url": "https://t.me/amandinhawallpaper",
-      "thumbnail_url": "https://raw.githubusercontent.com/S-Marcos-S/viagara-wallpapers/main/wallpapers/thumbnails/tg_44454.webp",
-      "full_url": "https://raw.githubusercontent.com/S-Marcos-S/viagara-wallpapers/main/wallpapers/full/tg_44454.mp4",
-      "primary_color": "#8c6c58",
-      "category": "live",
-      "type": "video",
-      "is_live": true,
-      "tags": [
-        "water",
-        "drops",
-        "glass",
-        "minimal",
-        "condensation",
-        "água",
-        "gotas",
-        "vidro"
-      ],
-      "content_hash": "d95052edac28382c5fb8483b3f70bfeb",
-      "search_terms": [
-        "gotas de água",
-        "water drops",
-        "vidro embaçado",
-        "condensation",
-        "vapor",
-        "janela",
-        "window",
-        "gotas escorrendo",
-        "minimalista",
-        "minimal",
-        "brown tone",
-        "tons terrosos",
-        "macro",
-        "texture",
-        "textura"
-      ],
-      "classified_by": "gemini"
-    },
-    {
       "id": "tg_44453",
       "name": "Gotas de Chuva no Vidro Embaçado",
       "author": "Wallpaper HD/4K (Amanda)",
@@ -4721,7 +4680,8 @@
         "brown",
         "marrom"
       ],
-      "classified_by": "gemini"
+      "classified_by": "gemini",
+      "visual_hash": "f76f5f7f5f5f7f6f"
     },
     {
       "id": "tg_44452",
