@@ -1,4 +1,6 @@
-### 🌌 Wallpapers FOSS v1.0.14
+### 🌌 Wallpapers FOSS v1.1.0
 
-- **Live Wallpapers:** Correção da tela preta na pré-visualização com transição suave via TextureView acelerado por hardware.
-- **Persistência de Miniatura:** A miniatura permanece visível sem piscar até o vídeo estar pronto para reprodução contínua.
+- **Live Wallpapers:** Pré-visualização fluida sem tela preta com TextureView e transição suave da miniatura.
+- **Privacidade & Telemetria:** Estatísticas anônimas de uso (Aptabase) com controle total nas configurações.
+- **Versões Beta:** Persistência garantida da opção de testador beta entre atualizações do app.
+- **Estabilidade:** Correções no ciclo de vida de reprodução e otimizações gerais.
