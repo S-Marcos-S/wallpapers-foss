@@ -2,6 +2,7 @@
 package dev.viagarawallpapers
 
 import android.app.Application
+import dev.viagarawallpapers.analytics.AnalyticsManager
 import dev.viagarawallpapers.data.Prefs
 import dev.viagarawallpapers.update.UpdateManager
 import dev.viagarawallpapers.wallpaper.DailyWallpaperManager
@@ -19,6 +20,7 @@ class ViagaraWallpapersApp : Application() {
     override fun onCreate() {
         super.onCreate()
         prefs = Prefs(this)
+        AnalyticsManager.init(this)
         UpdateManager.init(this)
         CoroutineScope(Dispatchers.IO).launch {
             if (prefs.autoDailyWallpaperEnabled.first()) {

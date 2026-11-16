@@ -94,6 +94,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.viagarawallpapers.BuildConfig
 import dev.viagarawallpapers.R
+import dev.viagarawallpapers.analytics.AnalyticsManager
 import dev.viagarawallpapers.data.Prefs
 import dev.viagarawallpapers.ui.theme.GlassCard
 import dev.viagarawallpapers.ui.theme.LocalGlassThemeActive
@@ -140,6 +141,7 @@ fun SettingsScreen(
     val isCheckingUpdates by UpdateManager.isCheckingUpdates.collectAsState()
     val downloadStatus by UpdateManager.downloadStatus.collectAsState()
     var isBetaTester by remember { mutableStateOf(UpdateManager.isBetaTesterEnabled(context)) }
+    var isAnalyticsEnabled by remember { mutableStateOf(AnalyticsManager.isEnabled(context)) }
 
     LaunchedEffect(Unit) {
         UpdateManager.checkForUpdates(context, force = true)
@@ -354,6 +356,63 @@ fun SettingsScreen(
                                 }
                                 HapticUtil.tick(view, hapticsEnabled)
                                 UpdateManager.checkForUpdates(context, force = true)
+                            },
+                        )
+                    }
+                }
+            }
+
+            // Section: Privacy
+            item {
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = stringResource(R.string.settings_section_privacy),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = colorScheme.primary,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                )
+            }
+
+            item {
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    cornerRadiusDp = 14.dp,
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 12.dp),
+                        ) {
+                            Text(
+                                text = stringResource(R.string.settings_analytics_title),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium,
+                                color = colorScheme.onSurface,
+                            )
+                            Text(
+                                text = stringResource(R.string.settings_analytics_desc),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = colorScheme.onSurfaceVariant,
+                            )
+                        }
+
+                        Switch(
+                            checked = isAnalyticsEnabled,
+                            onCheckedChange = { checked ->
+                                isAnalyticsEnabled = checked
+                                AnalyticsManager.setEnabled(context, checked)
+                                scope.launch {
+                                    prefs.setAnonymousAnalyticsEnabled(checked)
+                                }
+                                HapticUtil.tick(view, hapticsEnabled)
                             },
                         )
                     }

@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
+import dev.viagarawallpapers.analytics.AnalyticsManager
 import dev.viagarawallpapers.data.Prefs
 import dev.viagarawallpapers.ui.settings.SettingsScreen
 import dev.viagarawallpapers.ui.theme.WallpapersTheme
@@ -72,6 +73,7 @@ class MainActivity : ComponentActivity() {
         handleIntent(intent)
 
         UpdateManager.checkForUpdates(this, force = false)
+        AnalyticsManager.trackAppStart(this)
 
         setContent {
             val context = this
