@@ -582,6 +582,7 @@ fun WallpaperPickerScreen(
                             val videoFile = WallpaperRepository.getCachedOrDownloadFile(context, previewState.item.fullUrl)
                             isApplying = false
                             if (videoFile != null && VideoLiveWallpaperService.setVideoFile(context, videoFile)) {
+                                DailyWallpaperManager.markLiveWallpaperPickerLaunched()
                                 DailyWallpaperManager.onWallpaperApplied(context, previewState.item.id)
                                 runCatching {
                                     val intent = Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER).apply {
@@ -593,6 +594,7 @@ fun WallpaperPickerScreen(
                                     context.startActivity(intent)
                                     activePreviewState = null
                                 }.onFailure {
+                                    DailyWallpaperManager.isLiveWallpaperPickerActive = false
                                     Toast.makeText(context, R.string.wallpaper_apply_error, Toast.LENGTH_SHORT).show()
                                 }
                             } else {

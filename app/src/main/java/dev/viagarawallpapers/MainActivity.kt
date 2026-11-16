@@ -36,6 +36,8 @@ import dev.viagarawallpapers.ui.wallpaper.WallpaperPickerScreen
 import dev.viagarawallpapers.update.UpdateManager
 import dev.viagarawallpapers.wallpaper.DailyWallpaperManager
 import dev.viagarawallpapers.wallpaper.WallpaperNotificationManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 enum class Screen {
     WALLPAPERS,
@@ -49,7 +51,9 @@ class MainActivity : ComponentActivity() {
     private val wallpaperChangeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (context != null) {
-                DailyWallpaperManager.checkAndAdvanceIfNewDay(context, lifecycleScope)
+                lifecycleScope.launch(Dispatchers.IO) {
+                    DailyWallpaperManager.checkExternalWallpaperChanges(context)
+                }
             }
         }
     }
@@ -139,7 +143,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        DailyWallpaperManager.checkAndAdvanceIfNewDay(this, lifecycleScope)
+        if (DailyWallpaperManager.isLiveWallpaperPickerActive) {
+            DailyWallpaperManager.onLiveWallpaperReturned(this)
+        } else {
+            DailyWallpaperManager.checkAndAdvanceIfNewDay(this, lifecycleScope)
+        }
     }
 
     override fun onNewIntent(intent: Intent) {

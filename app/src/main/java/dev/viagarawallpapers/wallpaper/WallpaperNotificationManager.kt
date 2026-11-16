@@ -8,6 +8,9 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.drawable.BitmapDrawable
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
@@ -120,8 +123,23 @@ object WallpaperNotificationManager {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
 
-            val notification = NotificationCompat.Builder(appCtx, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_launcher_foreground)
+            val appIconBitmap: Bitmap? = runCatching {
+                val drawable = ContextCompat.getDrawable(appCtx, R.mipmap.ic_launcher) ?: return@runCatching null
+                if (drawable is BitmapDrawable && drawable.bitmap != null) {
+                    drawable.bitmap
+                } else {
+                    val width = if (drawable.intrinsicWidth > 0) drawable.intrinsicWidth else 192
+                    val height = if (drawable.intrinsicHeight > 0) drawable.intrinsicHeight else 192
+                    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+                    val canvas = Canvas(bitmap)
+                    drawable.setBounds(0, 0, canvas.width, canvas.height)
+                    drawable.draw(canvas)
+                    bitmap
+                }
+            }.getOrNull()
+
+            val builder = NotificationCompat.Builder(appCtx, CHANNEL_ID)
+                .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentTitle(title)
                 .setContentText(text)
                 .setStyle(NotificationCompat.BigTextStyle().bigText(text))
@@ -129,7 +147,12 @@ object WallpaperNotificationManager {
                 .setCategory(NotificationCompat.CATEGORY_STATUS)
                 .setAutoCancel(true)
                 .setContentIntent(pendingIntent)
-                .build()
+
+            if (appIconBitmap != null) {
+                builder.setLargeIcon(appIconBitmap)
+            }
+
+            val notification = builder.build()
 
             notificationManager.notify(NOTIFICATION_ID, notification)
         }
