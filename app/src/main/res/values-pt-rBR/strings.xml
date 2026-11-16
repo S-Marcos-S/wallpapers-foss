@@ -113,6 +113,9 @@
     <string name="settings_section_updates">Atualizações</string>
     <string name="settings_beta_tester_title">Participar de Versões Beta</string>
     <string name="settings_beta_tester_desc">Receba compilações de teste e novidades experimentais antes do lançamento público</string>
+    <string name="settings_section_privacy">Privacidade</string>
+    <string name="settings_analytics_title">Estatísticas anônimas de uso</string>
+    <string name="settings_analytics_desc">Ajuda a estimar usuários ativos sem coletar dados pessoais, endereços IP ou identificadores do dispositivo</string>
     <string name="settings_section_about">Sobre</string>
     <string name="settings_app_name">Wallpapers FOSS</string>
     <string name="settings_source_code">Código Fonte</string>

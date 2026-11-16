@@ -12,6 +12,7 @@ import android.graphics.Paint
 import android.os.Build
 import android.content.Intent
 import android.net.Uri
+import dev.viagarawallpapers.analytics.AnalyticsManager
 import dev.viagarawallpapers.util.WindowSizeUtil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -554,6 +555,7 @@ object WallpaperRepository {
                 }
 
                 DailyWallpaperManager.onWallpaperApplied(context, item.id)
+                AnalyticsManager.trackWallpaperApplied(context, isLive = item.isLive)
                 notifyWallpaperChanged()
                 Unit
             }

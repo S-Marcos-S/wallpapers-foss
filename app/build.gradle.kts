@@ -37,12 +37,13 @@ android {
         applicationId = "dev.viagarawallpapers"
         minSdk = 26
         targetSdk = 35
-        versionCode = 13
-        versionName = "1.0.12"
+        versionCode = 14
+        versionName = "1.0.13"
 
         buildConfigField("String", "GIT_SHA", "\"$gitCommitSha\"")
         buildConfigField("Long", "BUILD_TIME_MILLIS", "${buildTimeMillis}L")
         buildConfigField("Boolean", "IS_BETA_BUILD", "$isBetaBuild")
+        buildConfigField("String", "APTABASE_APP_KEY", "\"A-US-9336329142\"")
     }
 
     signingConfigs {
@@ -126,6 +127,9 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
 
     implementation("androidx.datastore:datastore-preferences:1.1.1")
+
+    // Privacy-preserving anonymous usage statistics
+    implementation("com.github.aptabase:aptabase-kotlin:0.0.8")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
 

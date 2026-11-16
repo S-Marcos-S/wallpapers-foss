@@ -23,6 +23,7 @@ class Prefs(private val context: Context) {
         val DAILY_WALLPAPER_CURRENT_ID = stringPreferencesKey("daily_wallpaper_current_id")
         val DAILY_WALLPAPER_INDEX = intPreferencesKey("daily_wallpaper_index")
         val IS_BETA_TESTER = booleanPreferencesKey("is_beta_tester")
+        val ANONYMOUS_ANALYTICS_ENABLED = booleanPreferencesKey("anonymous_analytics_enabled")
         val ACTIVE_THEME = stringPreferencesKey("active_theme_id")
         val HAPTICS_ENABLED = booleanPreferencesKey("haptics_enabled")
         val DAILY_WALLPAPER_TARGET = stringPreferencesKey("daily_wallpaper_target")
@@ -55,6 +56,10 @@ class Prefs(private val context: Context) {
 
     val isBetaTester: Flow<Boolean> = data.map {
         it[Keys.IS_BETA_TESTER] ?: false
+    }.distinctUntilChanged()
+
+    val anonymousAnalyticsEnabled: Flow<Boolean> = data.map {
+        it[Keys.ANONYMOUS_ANALYTICS_ENABLED] ?: true
     }.distinctUntilChanged()
 
     val activeThemeId: Flow<String> = data.map {
@@ -103,6 +108,10 @@ class Prefs(private val context: Context) {
 
     suspend fun setBetaTester(enabled: Boolean) {
         context.dataStore.edit { it[Keys.IS_BETA_TESTER] = enabled }
+    }
+
+    suspend fun setAnonymousAnalyticsEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[Keys.ANONYMOUS_ANALYTICS_ENABLED] = enabled }
     }
 
     suspend fun setActiveThemeId(themeId: String) {

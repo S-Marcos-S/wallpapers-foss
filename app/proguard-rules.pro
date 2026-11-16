@@ -16,3 +16,7 @@
 # Line numbers and source files for clean stacktraces
 -keepattributes SourceFile,LineNumberTable
 -renamesourcefileattribute SourceFile
+
+# Aptabase telemetry rules
+-keep class com.aptabase.** { *; }
+-dontwarn com.aptabase.**

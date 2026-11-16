@@ -159,6 +159,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import dev.viagarawallpapers.analytics.AnalyticsManager
 import dev.viagarawallpapers.wallpaper.WallpaperCatalog
 import dev.viagarawallpapers.wallpaper.WallpaperCategory
 import dev.viagarawallpapers.wallpaper.WallpaperDownloadManager
@@ -584,6 +585,7 @@ fun WallpaperPickerScreen(
                             if (videoFile != null && VideoLiveWallpaperService.setVideoFile(context, videoFile)) {
                                 DailyWallpaperManager.markLiveWallpaperPickerLaunched()
                                 DailyWallpaperManager.onWallpaperApplied(context, previewState.item.id)
+                                AnalyticsManager.trackWallpaperApplied(context, isLive = true)
                                 runCatching {
                                     val intent = Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER).apply {
                                         putExtra(
