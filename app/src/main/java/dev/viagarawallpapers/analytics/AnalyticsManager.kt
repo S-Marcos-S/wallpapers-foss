@@ -2,12 +2,14 @@
 package dev.viagarawallpapers.analytics
 
 import android.content.Context
+import android.content.res.Configuration
+import android.os.Build
 import com.aptabase.Aptabase
 import dev.viagarawallpapers.BuildConfig
 
 /**
  * Manages privacy-first, anonymous usage telemetry using Aptabase.
- * Respects user preferences and never collects IP addresses or personally identifiable information.
+ * Respects user preferences and never collects IP addresses, personal data, or hardware IDs.
  */
 object AnalyticsManager {
     private const val PREFS_NAME = "wallpaper_analytics_prefs"
@@ -46,6 +48,39 @@ object AnalyticsManager {
         }
     }
 
+    private fun getDeviceName(): String {
+        val manufacturer = Build.MANUFACTURER.orEmpty().trim().replaceFirstChar { it.uppercase() }
+        val model = Build.MODEL.orEmpty().trim()
+        return when {
+            manufacturer.isBlank() && model.isBlank() -> "Unknown"
+            manufacturer.isBlank() -> model
+            model.isBlank() -> manufacturer
+            model.startsWith(manufacturer, ignoreCase = true) -> model
+            else -> "$manufacturer $model"
+        }
+    }
+
+    private fun getScreenResolution(context: Context): String {
+        return try {
+            val dm = context.resources.displayMetrics
+            val width = dm.widthPixels
+            val height = dm.heightPixels
+            "${minOf(width, height)}x${maxOf(width, height)}"
+        } catch (_: Throwable) {
+            "Unknown"
+        }
+    }
+
+    private fun getDeviceType(context: Context): String {
+        return try {
+            val isTablet = (context.resources.configuration.screenLayout and
+                    Configuration.SCREENLAYOUT_SIZE_MASK) >= Configuration.SCREENLAYOUT_SIZE_LARGE
+            if (isTablet) "tablet" else "phone"
+        } catch (_: Throwable) {
+            "phone"
+        }
+    }
+
     fun trackAppStart(context: Context) {
         if (!isEnabled(context)) return
         val now = System.currentTimeMillis()
@@ -55,7 +90,12 @@ object AnalyticsManager {
         lastAppStartTimeMs = now
         ensureInitialized(context)
         runCatching {
-            Aptabase.instance.trackEvent("app_started")
+            val props = mapOf(
+                "device" to getDeviceName(),
+                "screen" to getScreenResolution(context),
+                "device_type" to getDeviceType(context),
+            )
+            Aptabase.instance.trackEvent("app_started", props)
         }
     }
 
@@ -70,7 +110,10 @@ object AnalyticsManager {
         runCatching {
             Aptabase.instance.trackEvent(
                 "wallpaper_applied",
-                mapOf("type" to if (isLive) "live" else "static")
+                mapOf(
+                    "type" to if (isLive) "live" else "static",
+                    "screen" to getScreenResolution(context),
+                )
             )
         }
     }

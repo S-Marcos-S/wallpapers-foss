@@ -1,6 +1,4 @@
-### 🌌 Wallpapers FOSS v1.1.0
+### 🌌 Wallpapers FOSS v1.1.1 (Beta)
 
-- **Live Wallpapers:** Pré-visualização fluida sem tela preta com TextureView e transição suave da miniatura.
-- **Privacidade & Telemetria:** Estatísticas anônimas de uso (Aptabase) com controle total nas configurações.
-- **Versões Beta:** Persistência garantida da opção de testador beta entre atualizações do app.
-- **Estabilidade:** Correções no ciclo de vida de reprodução e otimizações gerais.
+- **Telemetria Anônima:** Inclusão de modelo do aparelho, resolução de tela e tipo de dispositivo nas estatísticas.
+- **Otimização:** Dados técnicos para auxiliar na calibração de wallpapers e diagnóstico de estabilidade.
