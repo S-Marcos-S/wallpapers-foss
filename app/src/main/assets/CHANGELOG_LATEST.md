@@ -1,4 +1,4 @@
-### 🌌 Wallpapers FOSS v1.0.13
+### 🌌 Wallpapers FOSS v1.0.14
 
-- **Estatísticas Anônimas:** Integração com Aptabase para estimativa privada e anônima de usuários ativos (sem coleta de IP ou dados pessoais).
-- **Controle de Privacidade:** Nova seção nas configurações para ativar/desativar o envio de estatísticas anônimas a qualquer momento.
+- **Live Wallpapers:** Correção da tela preta na pré-visualização com transição suave via TextureView acelerado por hardware.
+- **Persistência de Miniatura:** A miniatura permanece visível sem piscar até o vídeo estar pronto para reprodução contínua.
