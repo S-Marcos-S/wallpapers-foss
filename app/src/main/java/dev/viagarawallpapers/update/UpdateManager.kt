@@ -95,7 +95,10 @@ object UpdateManager {
 
     fun isBetaTesterEnabled(context: Context): Boolean {
         val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        return prefs.getBoolean(KEY_BETA_TESTER_ENABLED, false)
+        if (prefs.contains(KEY_BETA_TESTER_ENABLED)) {
+            return prefs.getBoolean(KEY_BETA_TESTER_ENABLED, false)
+        }
+        return BuildConfig.IS_BETA_BUILD
     }
 
     fun setBetaTesterEnabled(context: Context, enabled: Boolean) {
@@ -395,7 +398,11 @@ object UpdateManager {
                 val cacheFile = File(appCtx.cacheDir, "wallpapers-foss-update.apk")
                 if (cacheFile.exists()) cacheFile.delete()
                 val prefs = appCtx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                prefs.edit().clear().apply()
+                prefs.edit()
+                    .remove(KEY_DOWNLOADED_APK_URI)
+                    .remove(KEY_DOWNLOADED_VERSION_CODE)
+                    .remove(KEY_DOWNLOADED_VERSION_NAME)
+                    .apply()
             } catch (_: Throwable) {}
         }
     }

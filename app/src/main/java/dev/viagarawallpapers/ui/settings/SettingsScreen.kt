@@ -349,7 +349,10 @@ fun SettingsScreen(
                             onCheckedChange = { checked ->
                                 isBetaTester = checked
                                 UpdateManager.setBetaTesterEnabled(context, checked)
-                                HapticUtil.tick(view)
+                                scope.launch {
+                                    prefs.setBetaTester(checked)
+                                }
+                                HapticUtil.tick(view, hapticsEnabled)
                                 UpdateManager.checkForUpdates(context, force = true)
                             },
                         )
