@@ -1598,69 +1598,71 @@ private fun LiveWallpaperPlayer(
                         view.setTransform(matrix)
                     }
 
-                    TextureView(ctx).apply {
+                    val textureView = TextureView(ctx).apply {
                         layoutParams = ViewGroup.LayoutParams(
                             ViewGroup.LayoutParams.MATCH_PARENT,
                             ViewGroup.LayoutParams.MATCH_PARENT
                         )
+                    }
 
-                        surfaceTextureListener = object : TextureView.SurfaceTextureListener {
-                            override fun onSurfaceTextureAvailable(st: SurfaceTexture, w: Int, h: Int) {
-                                currentSurface?.release()
-                                val surface = android.view.Surface(st)
-                                currentSurface = surface
+                    textureView.surfaceTextureListener = object : TextureView.SurfaceTextureListener {
+                        override fun onSurfaceTextureAvailable(st: SurfaceTexture, w: Int, h: Int) {
+                            currentSurface?.release()
+                            val surface = android.view.Surface(st)
+                            currentSurface = surface
 
-                                runCatching {
-                                    mediaPlayer?.release()
-                                    mediaPlayer = MediaPlayer().apply {
-                                        setSurface(surface)
-                                        setDataSource(videoPath)
-                                        isLooping = true
-                                        setVolume(0f, 0f) // Silent wallpaper preview
-                                        setOnErrorListener { _, _, _ -> true }
-                                        setOnVideoSizeChangedListener { _, vw, vh ->
-                                            if (vw > 0 && vh > 0) {
-                                                videoWidth = vw
-                                                videoHeight = vh
-                                                updateTransform(this@apply, width, height)
-                                            }
+                            runCatching {
+                                mediaPlayer?.release()
+                                mediaPlayer = MediaPlayer().apply {
+                                    setSurface(surface)
+                                    setDataSource(videoPath)
+                                    isLooping = true
+                                    setVolume(0f, 0f) // Silent wallpaper preview
+                                    setOnErrorListener { _, _, _ -> true }
+                                    setOnVideoSizeChangedListener { _, vw, vh ->
+                                        if (vw > 0 && vh > 0) {
+                                            videoWidth = vw
+                                            videoHeight = vh
+                                            updateTransform(textureView, textureView.width, textureView.height)
                                         }
-                                        setOnPreparedListener { mp ->
-                                            if (mp.videoWidth > 0 && mp.videoHeight > 0) {
-                                                videoWidth = mp.videoWidth
-                                                videoHeight = mp.videoHeight
-                                                updateTransform(this@apply, if (width > 0) width else w, if (height > 0) height else h)
-                                            }
-                                            mp.start()
-                                        }
-                                        prepareAsync()
                                     }
-                                }
-                            }
-
-                            override fun onSurfaceTextureSizeChanged(st: SurfaceTexture, w: Int, h: Int) {
-                                updateTransform(this@apply, w, h)
-                            }
-
-                            override fun onSurfaceTextureDestroyed(st: SurfaceTexture): Boolean {
-                                runCatching {
-                                    mediaPlayer?.stop()
-                                    mediaPlayer?.release()
-                                }
-                                mediaPlayer = null
-                                currentSurface?.release()
-                                currentSurface = null
-                                isVideoReady = false
-                                return true
-                            }
-
-                            override fun onSurfaceTextureUpdated(st: SurfaceTexture) {
-                                if (!isVideoReady) {
-                                    isVideoReady = true
+                                    setOnPreparedListener { mp ->
+                                        if (mp.videoWidth > 0 && mp.videoHeight > 0) {
+                                            videoWidth = mp.videoWidth
+                                            videoHeight = mp.videoHeight
+                                            updateTransform(textureView, if (textureView.width > 0) textureView.width else w, if (textureView.height > 0) textureView.height else h)
+                                        }
+                                        mp.start()
+                                    }
+                                    prepareAsync()
                                 }
                             }
                         }
+
+                        override fun onSurfaceTextureSizeChanged(st: SurfaceTexture, w: Int, h: Int) {
+                            updateTransform(textureView, w, h)
+                        }
+
+                        override fun onSurfaceTextureDestroyed(st: SurfaceTexture): Boolean {
+                            runCatching {
+                                mediaPlayer?.stop()
+                                mediaPlayer?.release()
+                            }
+                            mediaPlayer = null
+                            currentSurface?.release()
+                            currentSurface = null
+                            isVideoReady = false
+                            return true
+                        }
+
+                        override fun onSurfaceTextureUpdated(st: SurfaceTexture) {
+                            if (!isVideoReady) {
+                                isVideoReady = true
+                            }
+                        }
                     }
+
+                    textureView
                 },
                 modifier = Modifier
                     .fillMaxSize()
