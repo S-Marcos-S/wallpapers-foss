@@ -1,6 +1,6 @@
-### 🌌 Wallpapers FOSS v1.0.10
+### 🌌 Wallpapers FOSS v1.0.11
 
-- **Papel de Parede Diário:** Movido para as configurações com design minimalista.
-- **Seleção de Telas:** Escolha alterar a tela inicial, bloqueio ou ambas.
-- **Pausa Inteligente:** Pausa automática na tela que receber outro wallpaper fora do app.
-- **Armazenamento:** Indicador compacto de espaço e opção para limpar cache.
+- **Pausa Externa:** Correção para não pausar ao trocar wallpapers dentro do app.
+- **Troca Diária às 00:00:** Agendamento exato para a meia-noite local com consumo mínimo de bateria.
+- **Ativação Suave:** O papel de parede atual é preservado ao ativar o recurso, sem troca imediata.
+- **Notificações:** Ícone oficial do Wallpaper Foss nas notificações de novos wallpapers.

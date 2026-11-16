@@ -521,79 +521,89 @@ object WallpaperRepository {
         bitmap: Bitmap,
         flags: Int,
     ): Result<Unit> = withContext(Dispatchers.IO) {
-        runCatching {
-            val effectiveBitmap = bitmap
-            val wm = WallpaperManager.getInstance(context)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                try {
-                    wm.setBitmap(effectiveBitmap, null, true, flags)
-                } catch (e: Exception) {
-                    if (flags != WallpaperManager.FLAG_SYSTEM) {
-                        wm.setBitmap(effectiveBitmap, null, true, WallpaperManager.FLAG_SYSTEM)
-                    } else {
-                        throw e
+        DailyWallpaperManager.markInternalChangeStart()
+        try {
+            runCatching {
+                val effectiveBitmap = bitmap
+                val wm = WallpaperManager.getInstance(context)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    try {
+                        wm.setBitmap(effectiveBitmap, null, true, flags)
+                    } catch (e: Exception) {
+                        if (flags != WallpaperManager.FLAG_SYSTEM) {
+                            wm.setBitmap(effectiveBitmap, null, true, WallpaperManager.FLAG_SYSTEM)
+                        } else {
+                            throw e
+                        }
                     }
+                } else {
+                    wm.setBitmap(effectiveBitmap)
                 }
-            } else {
-                wm.setBitmap(effectiveBitmap)
-            }
 
-            // Immediately extract primary color from the applied wallpaper
-            val extractedColor: Int? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-                runCatching {
-                    android.app.WallpaperColors.fromBitmap(effectiveBitmap)?.primaryColor?.toArgb()
+                // Immediately extract primary color from the applied wallpaper
+                val extractedColor: Int? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+                    runCatching {
+                        android.app.WallpaperColors.fromBitmap(effectiveBitmap)?.primaryColor?.toArgb()
+                    }.getOrNull()
+                } else null ?: runCatching {
+                    android.graphics.Color.parseColor(item.primaryColorHex)
                 }.getOrNull()
-            } else null ?: runCatching {
-                android.graphics.Color.parseColor(item.primaryColorHex)
-            }.getOrNull()
 
-            if (extractedColor != null) {
-                _currentPrimaryColor.value = extractedColor
+                if (extractedColor != null) {
+                    _currentPrimaryColor.value = extractedColor
+                }
+
+                DailyWallpaperManager.onWallpaperApplied(context, item.id)
+                notifyWallpaperChanged()
+                Unit
             }
-
-            DailyWallpaperManager.onWallpaperApplied(context, item.id)
-            notifyWallpaperChanged()
-            Unit
+        } finally {
+            DailyWallpaperManager.markInternalChangeEnd()
         }
     }
 
     @SuppressLint("MissingPermission")
     suspend fun applyWallpaper(context: Context, fullUrl: String, flags: Int): Result<Unit> = withContext(Dispatchers.IO) {
-        runCatching {
-            val rawBitmap = getCachedOrDownloadBitmap(context, fullUrl)
-                ?: throw IllegalStateException("Could not download wallpaper bitmap")
-            val bitmap = frameBitmapToDisplay(context, rawBitmap)
+        DailyWallpaperManager.markInternalChangeStart()
+        try {
+            runCatching {
+                val rawBitmap = getCachedOrDownloadBitmap(context, fullUrl)
+                    ?: throw IllegalStateException("Could not download wallpaper bitmap")
+                val bitmap = frameBitmapToDisplay(context, rawBitmap)
 
-            val wm = WallpaperManager.getInstance(context)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                try {
-                    wm.setBitmap(bitmap, null, true, flags)
-                } catch (e: Exception) {
-                    if (flags != WallpaperManager.FLAG_SYSTEM) {
-                        wm.setBitmap(bitmap, null, true, WallpaperManager.FLAG_SYSTEM)
-                    } else {
-                        throw e
+                val wm = WallpaperManager.getInstance(context)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    try {
+                        wm.setBitmap(bitmap, null, true, flags)
+                    } catch (e: Exception) {
+                        if (flags != WallpaperManager.FLAG_SYSTEM) {
+                            wm.setBitmap(bitmap, null, true, WallpaperManager.FLAG_SYSTEM)
+                        } else {
+                            throw e
+                        }
+                    }
+                } else {
+                    wm.setBitmap(bitmap)
+                }
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+                    runCatching {
+                        android.app.WallpaperColors.fromBitmap(bitmap)?.primaryColor?.toArgb()?.let {
+                            _currentPrimaryColor.value = it
+                        }
                     }
                 }
-            } else {
-                wm.setBitmap(bitmap)
-            }
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-                runCatching {
-                    android.app.WallpaperColors.fromBitmap(bitmap)?.primaryColor?.toArgb()?.let {
-                        _currentPrimaryColor.value = it
-                    }
+                if (bitmap !== rawBitmap && !rawBitmap.isRecycled) {
+                    rawBitmap.recycle()
                 }
-            }
 
-            if (bitmap !== rawBitmap && !rawBitmap.isRecycled) {
-                rawBitmap.recycle()
+                DailyWallpaperManager.recordCurrentWallpaperIds(context)
+                notifyWallpaperChanged()
+                Unit
             }
-
-            DailyWallpaperManager.recordCurrentWallpaperIds(context)
-            notifyWallpaperChanged()
-            Unit
+        } finally {
+            DailyWallpaperManager.markInternalChangeEnd()
         }
     }
 

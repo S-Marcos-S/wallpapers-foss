@@ -8,6 +8,8 @@ import dev.viagarawallpapers.wallpaper.DailyWallpaperManager
 import dev.viagarawallpapers.wallpaper.WallpaperCheckAlarmReceiver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 class ViagaraWallpapersApp : Application() {
 
@@ -18,7 +20,11 @@ class ViagaraWallpapersApp : Application() {
         super.onCreate()
         prefs = Prefs(this)
         UpdateManager.init(this)
-        WallpaperCheckAlarmReceiver.scheduleNextCheck(this)
+        CoroutineScope(Dispatchers.IO).launch {
+            if (prefs.autoDailyWallpaperEnabled.first()) {
+                WallpaperCheckAlarmReceiver.scheduleDailyChange(this@ViagaraWallpapersApp)
+            }
+        }
         DailyWallpaperManager.checkAndAdvanceIfNewDay(this, CoroutineScope(Dispatchers.IO))
     }
 }

@@ -8,28 +8,39 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.util.Log
+import dev.viagarawallpapers.data.Prefs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.Calendar
-import java.util.TimeZone
 
 class WallpaperCheckAlarmReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         val appCtx = context.applicationContext
 
-        // Schedule next check immediately
-        scheduleNextCheck(appCtx)
-
-        // Perform wallpaper catalog check on background thread
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                DailyWallpaperManager.checkExternalWallpaperChanges(appCtx)
-                DailyWallpaperManager.checkAndAdvanceIfNewDay(appCtx, this)
+                val prefs = Prefs(appCtx)
+                val isEnabled = prefs.autoDailyWallpaperEnabled.first()
+
+                if (isEnabled) {
+                    // Reagenda imediatamente a próxima meia-noite (00:00)
+                    scheduleDailyChange(appCtx)
+
+                    val lastTimestamp = prefs.dailyWallpaperLastTimestamp.first()
+                    val now = System.currentTimeMillis()
+
+                    if (lastTimestamp <= 0L || DailyWallpaperManager.isDifferentDay(lastTimestamp, now)) {
+                        DailyWallpaperManager.advanceToNextWallpaper(appCtx, isUserDislike = false)
+                    }
+                }
+
+                // Aproveita o disparo diário para sincronizar catálogo sem custo extra de bateria
                 WallpaperRepository.loadCatalog(appCtx)
             } catch (e: Exception) {
-                Log.e(TAG, "Failed during periodic wallpaper check", e)
+                Log.e(TAG, "Failed during daily wallpaper change", e)
             }
         }
     }
@@ -40,10 +51,27 @@ class WallpaperCheckAlarmReceiver : BroadcastReceiver() {
         private const val REQUEST_CODE = 4092
 
         /**
-         * Calculates the next target window (03:00 UTC or 15:00 UTC) right after
-         * the GitHub Actions workflows complete classification, and schedules an alarm.
+         * Calcula o timestamp exato da próxima meia-noite local (00:00:00) no fuso do dispositivo.
          */
-        fun scheduleNextCheck(context: Context) {
+        fun calculateNextMidnightMs(): Long {
+            val cal = Calendar.getInstance().apply {
+                add(Calendar.DAY_OF_YEAR, 1)
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+            if (cal.timeInMillis <= System.currentTimeMillis()) {
+                cal.add(Calendar.DAY_OF_YEAR, 1)
+            }
+            return cal.timeInMillis
+        }
+
+        /**
+         * Agenda um alarme pontual no AlarmManager para as 00:00:00 locais.
+         * Utiliza AlarmManager.RTC com setAndAllowWhileIdle para mínimo consumo de bateria (zero wakeups intermediários).
+         */
+        fun scheduleDailyChange(context: Context) {
             runCatching {
                 val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
                 val intent = Intent(context, WallpaperCheckAlarmReceiver::class.java).apply {
@@ -56,49 +84,42 @@ class WallpaperCheckAlarmReceiver : BroadcastReceiver() {
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
                 )
 
-                val triggerAtMillis = calculateNextTriggerTimeMs()
+                val triggerAtMillis = calculateNextMidnightMs()
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     alarmManager.setAndAllowWhileIdle(
                         AlarmManager.RTC,
                         triggerAtMillis,
-                        pendingIntent
+                        pendingIntent,
                     )
                 } else {
                     alarmManager.set(
                         AlarmManager.RTC,
                         triggerAtMillis,
-                        pendingIntent
+                        pendingIntent,
                     )
                 }
             }
         }
 
-        private fun calculateNextTriggerTimeMs(): Long {
-            val nowUtc = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
-            val nowMs = nowUtc.timeInMillis
-
-            // Target hours in UTC: 03:00 (after 02:30 workflow) and 15:00 (after 14:30 workflow)
-            val window1 = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
-                set(Calendar.HOUR_OF_DAY, 3)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }
-            val window2 = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
-                set(Calendar.HOUR_OF_DAY, 15)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }
-
-            return when {
-                window1.timeInMillis > nowMs -> window1.timeInMillis
-                window2.timeInMillis > nowMs -> window2.timeInMillis
-                else -> {
-                    // Both have passed for today, schedule for tomorrow 03:00 UTC
-                    window1.add(Calendar.DAY_OF_YEAR, 1)
-                    window1.timeInMillis
+        /**
+         * Cancela o agendamento de troca diária quando a opção é desativada, evitando qualquer despertar desnecessário.
+         */
+        fun cancelDailyChange(context: Context) {
+            runCatching {
+                val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
+                val intent = Intent(context, WallpaperCheckAlarmReceiver::class.java).apply {
+                    action = ACTION_CHECK_WALLPAPERS
+                }
+                val pendingIntent = PendingIntent.getBroadcast(
+                    context,
+                    REQUEST_CODE,
+                    intent,
+                    PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE,
+                )
+                if (pendingIntent != null) {
+                    alarmManager.cancel(pendingIntent)
+                    pendingIntent.cancel()
                 }
             }
         }

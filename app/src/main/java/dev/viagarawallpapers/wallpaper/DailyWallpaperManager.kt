@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
 import java.util.Calendar
+import java.util.concurrent.atomic.AtomicBoolean
 
 enum class DailyWallpaperTarget(val id: String) {
     BOTH("both"),
@@ -36,6 +37,41 @@ object DailyWallpaperManager {
     val currentWallpaperId: StateFlow<String> = _currentWallpaperId.asStateFlow()
 
     private val advanceMutex = Mutex()
+
+    private val isInternalOperation = AtomicBoolean(false)
+    @Volatile
+    private var lastInternalOperationTimestamp: Long = 0L
+    @Volatile
+    var isLiveWallpaperPickerActive: Boolean = false
+
+    fun markInternalChangeStart() {
+        isInternalOperation.set(true)
+        lastInternalOperationTimestamp = System.currentTimeMillis()
+    }
+
+    fun markInternalChangeEnd() {
+        lastInternalOperationTimestamp = System.currentTimeMillis()
+        isInternalOperation.set(false)
+    }
+
+    fun markLiveWallpaperPickerLaunched() {
+        isLiveWallpaperPickerActive = true
+        lastInternalOperationTimestamp = System.currentTimeMillis()
+    }
+
+    fun onLiveWallpaperReturned(context: Context) {
+        isLiveWallpaperPickerActive = false
+        lastInternalOperationTimestamp = System.currentTimeMillis()
+        CoroutineScope(Dispatchers.IO).launch {
+            recordCurrentWallpaperIds(context)
+        }
+    }
+
+    fun isInternalChangeInProgress(): Boolean {
+        if (isInternalOperation.get()) return true
+        if (isLiveWallpaperPickerActive) return true
+        return (System.currentTimeMillis() - lastInternalOperationTimestamp) < 5000L
+    }
 
     fun getEffectiveSystemId(context: Context): Int {
         return runCatching {
@@ -60,6 +96,11 @@ object DailyWallpaperManager {
     }
 
     suspend fun checkExternalWallpaperChanges(context: Context): Boolean = withContext(Dispatchers.IO) {
+        if (isInternalChangeInProgress()) {
+            recordCurrentWallpaperIds(context)
+            return@withContext false
+        }
+
         val prefs = Prefs(context)
         val isEnabled = prefs.autoDailyWallpaperEnabled.first()
         if (!isEnabled) return@withContext false
@@ -163,8 +204,10 @@ object DailyWallpaperManager {
             val lastTimestamp = prefs.dailyWallpaperLastTimestamp.first()
             val now = System.currentTimeMillis()
 
-            if (lastTimestamp <= 0L || currentId.isBlank() || isDifferentDay(lastTimestamp, now)) {
+            if (lastTimestamp > 0L && isDifferentDay(lastTimestamp, now)) {
                 advanceToNextWallpaper(context, isUserDislike = false)
+            } else if (lastTimestamp <= 0L) {
+                prefs.setDailyWallpaperLastTimestamp(now)
             }
         }
     }
@@ -174,15 +217,15 @@ object DailyWallpaperManager {
         prefs.setAutoDailyWallpaperEnabled(enabled)
         if (enabled) {
             recordCurrentWallpaperIds(context)
-            val lastTimestamp = prefs.dailyWallpaperLastTimestamp.first()
+            val now = System.currentTimeMillis()
+            prefs.setDailyWallpaperLastTimestamp(now)
             val currentId = prefs.dailyWallpaperCurrentId.first().trim()
             if (currentId.isNotBlank()) {
                 _currentWallpaperId.value = currentId
             }
-            val now = System.currentTimeMillis()
-            if (lastTimestamp <= 0L || currentId.isBlank() || isDifferentDay(lastTimestamp, now)) {
-                advanceToNextWallpaper(context, isUserDislike = false)
-            }
+            WallpaperCheckAlarmReceiver.scheduleDailyChange(context)
+        } else {
+            WallpaperCheckAlarmReceiver.cancelDailyChange(context)
         }
     }
 
