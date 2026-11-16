@@ -16,7 +16,10 @@ import android.os.Build
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.Toast
-import android.widget.VideoView
+import android.graphics.Matrix
+import android.graphics.SurfaceTexture
+import android.media.MediaPlayer
+import android.view.TextureView
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
@@ -889,6 +892,12 @@ private fun WallpaperPreviewOverlay(
         }
     }
 
+    val previewThumbnail by produceState<Bitmap?>(initialValue = initialBitmap, item.thumbnailUrl) {
+        if (value == null) {
+            value = WallpaperRepository.getCachedOrDownloadBitmap(context, item.thumbnailUrl)
+        }
+    }
+
     val videoFile by produceState<java.io.File?>(initialValue = null, item.fullUrl) {
         if (isVideo) {
             value = WallpaperRepository.getCachedOrDownloadFile(context, item.fullUrl)
@@ -1013,71 +1022,13 @@ private fun WallpaperPreviewOverlay(
                 }
                 .background(fallbackColor)
         ) {
-            // Media content: Canvas for images, VideoView for video
+            // Media content: Hardware-accelerated live video player or static image Canvas
             if (isVideo) {
-                if (videoFile != null) {
-                    AndroidView(
-                        factory = { ctx ->
-                            VideoView(ctx).apply {
-                                layoutParams = FrameLayout.LayoutParams(
-                                    ViewGroup.LayoutParams.MATCH_PARENT,
-                                    ViewGroup.LayoutParams.MATCH_PARENT
-                                )
-                                setOnPreparedListener { mp ->
-                                    mp.isLooping = true
-                                    mp.setVolume(0f, 0f)
-                                    mp.start()
-                                }
-                                setVideoPath(videoFile!!.absolutePath)
-                            }
-                        },
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                } else if (initialBitmap != null) {
-                    val bmp = initialBitmap
-                    val bmpW = bmp.width.toFloat()
-                    val bmpH = bmp.height.toFloat()
-                    val imageBmp = remember(bmp) { bmp.asImageBitmap() }
-                    Canvas(modifier = Modifier.fillMaxSize()) {
-                        val vw = size.width
-                        val vh = size.height
-                        if (vw > 0f && vh > 0f && bmpW > 0f && bmpH > 0f && !bmp.isRecycled) {
-                            val baseScale = maxOf(vw / bmpW, vh / bmpH)
-                            withTransform({
-                                translate(left = vw / 2f, top = vh / 2f)
-                                scale(scaleX = baseScale, scaleY = baseScale, pivot = Offset.Zero)
-                                translate(left = -bmpW / 2f, top = -bmpH / 2f)
-                            }) {
-                                drawImage(imageBmp)
-                            }
-                        }
-                    }
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator(
-                            color = Color.White,
-                            modifier = Modifier.size(32.dp),
-                            strokeWidth = 2.5.dp,
-                        )
-                    }
-                } else {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            CircularProgressIndicator(color = Color.White)
-                            Spacer(Modifier.height(14.dp))
-                            Text(
-                                text = stringResource(R.string.wallpaper_loading),
-                                color = Color.White,
-                                fontSize = 14.sp,
-                            )
-                        }
-                    }
-                }
+                LiveWallpaperPlayer(
+                    videoFile = videoFile,
+                    thumbnailBitmap = previewThumbnail ?: initialBitmap,
+                    modifier = Modifier.fillMaxSize(),
+                )
             } else {
                 val currentBitmap = fullBitmap ?: initialBitmap
                 if (currentBitmap != null) {
@@ -1576,6 +1527,164 @@ private fun WallpaperPreviewOverlay(
                 item = item,
                 onDismiss = { showClassifyDialog = false },
             )
+        }
+    }
+}
+
+@Composable
+private fun LiveWallpaperPlayer(
+    videoFile: java.io.File?,
+    thumbnailBitmap: Bitmap?,
+    modifier: Modifier = Modifier,
+) {
+    var isVideoReady by remember { mutableStateOf(false) }
+
+    Box(modifier = modifier.fillMaxSize()) {
+        // 1. Static thumbnail: visible while video is buffering or preparing, avoiding any black flash
+        val currentThumb = thumbnailBitmap
+        if (currentThumb != null && !currentThumb.isRecycled) {
+            val bmpW = currentThumb.width.toFloat()
+            val bmpH = currentThumb.height.toFloat()
+            val imageBmp = remember(currentThumb) { currentThumb.asImageBitmap() }
+
+            Canvas(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        alpha = if (isVideoReady) 0f else 1f
+                    }
+            ) {
+                val vw = size.width
+                val vh = size.height
+                if (vw > 0f && vh > 0f && bmpW > 0f && bmpH > 0f && !currentThumb.isRecycled) {
+                    val baseScale = maxOf(vw / bmpW, vh / bmpH)
+                    withTransform({
+                        translate(left = vw / 2f, top = vh / 2f)
+                        scale(scaleX = baseScale, scaleY = baseScale, pivot = Offset.Zero)
+                        translate(left = -bmpW / 2f, top = -bmpH / 2f)
+                    }) {
+                        drawImage(imageBmp)
+                    }
+                }
+            }
+        }
+
+        // 2. Hardware-accelerated TextureView with MediaPlayer
+        if (videoFile != null && videoFile.exists()) {
+            val videoPath = remember(videoFile) { videoFile.absolutePath }
+
+            AndroidView(
+                factory = { ctx ->
+                    var mediaPlayer: MediaPlayer? = null
+                    var videoWidth = 0
+                    var videoHeight = 0
+                    var currentSurface: android.view.Surface? = null
+
+                    fun updateTransform(view: TextureView, w: Int, h: Int) {
+                        if (w <= 0 || h <= 0 || videoWidth <= 0 || videoHeight <= 0) return
+                        val matrix = Matrix()
+                        val viewRatio = w.toFloat() / h.toFloat()
+                        val videoRatio = videoWidth.toFloat() / videoHeight.toFloat()
+                        val scaleX: Float
+                        val scaleY: Float
+                        if (viewRatio > videoRatio) {
+                            scaleX = 1f
+                            scaleY = viewRatio / videoRatio
+                        } else {
+                            scaleX = videoRatio / viewRatio
+                            scaleY = 1f
+                        }
+                        matrix.setScale(scaleX, scaleY, w / 2f, h / 2f)
+                        view.setTransform(matrix)
+                    }
+
+                    TextureView(ctx).apply {
+                        layoutParams = ViewGroup.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.MATCH_PARENT
+                        )
+
+                        surfaceTextureListener = object : TextureView.SurfaceTextureListener {
+                            override fun onSurfaceTextureAvailable(st: SurfaceTexture, w: Int, h: Int) {
+                                currentSurface?.release()
+                                val surface = android.view.Surface(st)
+                                currentSurface = surface
+
+                                runCatching {
+                                    mediaPlayer?.release()
+                                    mediaPlayer = MediaPlayer().apply {
+                                        setSurface(surface)
+                                        setDataSource(videoPath)
+                                        isLooping = true
+                                        setVolume(0f, 0f) // Silent wallpaper preview
+                                        setOnErrorListener { _, _, _ -> true }
+                                        setOnVideoSizeChangedListener { _, vw, vh ->
+                                            if (vw > 0 && vh > 0) {
+                                                videoWidth = vw
+                                                videoHeight = vh
+                                                updateTransform(this@apply, width, height)
+                                            }
+                                        }
+                                        setOnPreparedListener { mp ->
+                                            if (mp.videoWidth > 0 && mp.videoHeight > 0) {
+                                                videoWidth = mp.videoWidth
+                                                videoHeight = mp.videoHeight
+                                                updateTransform(this@apply, if (width > 0) width else w, if (height > 0) height else h)
+                                            }
+                                            mp.start()
+                                        }
+                                        prepareAsync()
+                                    }
+                                }
+                            }
+
+                            override fun onSurfaceTextureSizeChanged(st: SurfaceTexture, w: Int, h: Int) {
+                                updateTransform(this@apply, w, h)
+                            }
+
+                            override fun onSurfaceTextureDestroyed(st: SurfaceTexture): Boolean {
+                                runCatching {
+                                    mediaPlayer?.stop()
+                                    mediaPlayer?.release()
+                                }
+                                mediaPlayer = null
+                                currentSurface?.release()
+                                currentSurface = null
+                                isVideoReady = false
+                                return true
+                            }
+
+                            override fun onSurfaceTextureUpdated(st: SurfaceTexture) {
+                                if (!isVideoReady) {
+                                    isVideoReady = true
+                                }
+                            }
+                        }
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        alpha = if (isVideoReady) 1f else 0f
+                    },
+                onRelease = { view ->
+                    view.surfaceTextureListener = null
+                }
+            )
+        }
+
+        // 3. Subtle loading spinner while video is preparing or downloading
+        if (!isVideoReady) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator(
+                    color = Color.White,
+                    modifier = Modifier.size(34.dp),
+                    strokeWidth = 2.5.dp,
+                )
+            }
         }
     }
 }
