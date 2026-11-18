@@ -16,6 +16,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import dev.viagarawallpapers.MainActivity
 import dev.viagarawallpapers.R
+import org.json.JSONObject
 
 object WallpaperNotificationManager {
 
@@ -28,6 +29,45 @@ object WallpaperNotificationManager {
     private const val KEY_KNOWN_IDS = "known_wallpaper_ids"
     private const val KEY_INITIALIZED = "known_wallpapers_initialized"
     private const val KEY_LAST_NOTIFIED_ID = "last_notified_notification_id"
+
+    fun getLastNotifiedId(context: Context): String {
+        val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getString(KEY_LAST_NOTIFIED_ID, "") ?: ""
+    }
+
+    fun isInitialized(context: Context): Boolean {
+        val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getBoolean(KEY_INITIALIZED, false)
+    }
+
+    fun parseNotificationJson(jsonText: String): WallpaperNotificationInfo? {
+        return runCatching {
+            val root = JSONObject(jsonText)
+            val notif = root.optJSONObject("latest_notification") ?: root
+            val rawId = notif.optString("id", "").trim()
+            if (rawId.isBlank()) return@runCatching null
+
+            val idsArray = notif.optJSONArray("wallpaper_ids")
+            val notifIds = mutableListOf<String>()
+            if (idsArray != null) {
+                for (i in 0 until idsArray.length()) {
+                    notifIds.add(idsArray.getString(i))
+                }
+            }
+            val rawTitle = notif.optString("title", "").trim()
+            val rawMessage = notif.optString("message", "").trim()
+
+            WallpaperNotificationInfo(
+                id = rawId,
+                title = rawTitle.takeIf { it.isNotBlank() },
+                message = rawMessage.takeIf { it.isNotBlank() },
+                count = notif.optInt("count", notifIds.size),
+                wallpaperIds = notifIds,
+                timestamp = notif.optLong("timestamp", 0L),
+                generatedBy = notif.optString("generated_by", "fallback"),
+            )
+        }.getOrNull()
+    }
 
     fun checkAndNotifyNewWallpapers(context: Context, catalog: WallpaperCatalog) {
         val appCtx = context.applicationContext
@@ -43,6 +83,7 @@ object WallpaperNotificationManager {
             prefs.edit()
                 .putStringSet(KEY_KNOWN_IDS, currentIds)
                 .putBoolean(KEY_INITIALIZED, true)
+                .putString(KEY_LAST_NOTIFIED_ID, catalog.latestNotification?.id ?: "")
                 .apply()
             return
         }
@@ -76,6 +117,9 @@ object WallpaperNotificationManager {
                     appCtx.getString(R.string.wallpaper_new_notification_multiple, newWallpapers.size)
                 }
                 postWallpaperNotification(context = appCtx, title = title, text = text)
+                if (latestNotif != null && latestNotif.id.isNotBlank()) {
+                    prefs.edit().putString(KEY_LAST_NOTIFIED_ID, latestNotif.id).apply()
+                }
             }
 
             val updated = HashSet(knownIds).apply { addAll(currentIds) }

@@ -30,6 +30,7 @@ class Prefs(private val context: Context) {
         val DAILY_WALLPAPER_STOP_ON_EXTERNAL_CHANGE = booleanPreferencesKey("daily_wallpaper_stop_on_external_change")
         val DAILY_WALLPAPER_LAST_SYSTEM_ID = intPreferencesKey("daily_wallpaper_last_system_id")
         val DAILY_WALLPAPER_LAST_LOCK_ID = intPreferencesKey("daily_wallpaper_last_lock_id")
+        val WALLPAPER_NOTIFICATIONS_ENABLED = booleanPreferencesKey("wallpaper_notifications_enabled")
     }
 
     private val data get() = context.dataStore.data
@@ -86,6 +87,10 @@ class Prefs(private val context: Context) {
         it[Keys.DAILY_WALLPAPER_LAST_LOCK_ID] ?: -1
     }.distinctUntilChanged()
 
+    val wallpaperNotificationsEnabled: Flow<Boolean> = data.map {
+        it[Keys.WALLPAPER_NOTIFICATIONS_ENABLED] ?: true
+    }.distinctUntilChanged()
+
     suspend fun setWallpaperColumns(columns: Int) {
         context.dataStore.edit { it[Keys.WALLPAPER_COLUMNS] = columns.coerceIn(2, 4) }
     }
@@ -136,5 +141,9 @@ class Prefs(private val context: Context) {
 
     suspend fun setDailyWallpaperLastLockId(id: Int) {
         context.dataStore.edit { it[Keys.DAILY_WALLPAPER_LAST_LOCK_ID] = id }
+    }
+
+    suspend fun setWallpaperNotificationsEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[Keys.WALLPAPER_NOTIFICATIONS_ENABLED] = enabled }
     }
 }
