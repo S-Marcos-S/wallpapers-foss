@@ -68,6 +68,7 @@ object UpdateManager {
     private const val KEY_DOWNLOADED_VERSION_CODE = "downloaded_version_code"
     private const val KEY_DOWNLOADED_VERSION_NAME = "downloaded_version_name"
     private const val KEY_BETA_TESTER_ENABLED = "beta_tester_enabled"
+    private const val KEY_IGNORED_STABLE_VERSION = "ignored_stable_version_tag"
 
     private const val GITHUB_REPO = "S-Marcos-S/wallpapers-foss"
     private const val RELEASES_API_URL = "https://api.github.com/repos/$GITHUB_REPO/releases?per_page=5"
@@ -77,6 +78,9 @@ object UpdateManager {
 
     private val _updateAvailable = MutableStateFlow<UpdateInfo?>(null)
     val updateAvailable: StateFlow<UpdateInfo?> = _updateAvailable.asStateFlow()
+
+    private val _ignoredVersion = MutableStateFlow<String>("")
+    val ignoredVersion: StateFlow<String> = _ignoredVersion.asStateFlow()
 
     private val _isCheckingUpdates = MutableStateFlow(false)
     val isCheckingUpdates: StateFlow<Boolean> = _isCheckingUpdates.asStateFlow()
@@ -91,6 +95,14 @@ object UpdateManager {
 
     fun init(context: Context) {
         appContext = context.applicationContext
+        val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        _ignoredVersion.value = prefs.getString(KEY_IGNORED_STABLE_VERSION, "") ?: ""
+    }
+
+    fun ignoreUpdate(context: Context, tagName: String) {
+        val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putString(KEY_IGNORED_STABLE_VERSION, tagName).apply()
+        _ignoredVersion.value = tagName
     }
 
     fun isBetaTesterEnabled(context: Context): Boolean {
@@ -114,6 +126,9 @@ object UpdateManager {
         if (_isCheckingUpdates.value) return
 
         lastCheckTimeMs = now
+        if (appContext == null) {
+            init(context)
+        }
         appContext = context.applicationContext
 
         updateScope.launch {

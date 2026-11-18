@@ -148,4 +148,8 @@
     <string name="update_notification_channel_desc">Alerts for new versions of Wallpapers FOSS</string>
     <string name="update_notification_title">Wallpapers FOSS %1$s available</string>
     <string name="update_notification_text">Tap to see what\'s new and update</string>
+
+    <string name="inapp_update_title">New version available</string>
+    <string name="inapp_update_whats_new">What\'s new:</string>
+    <string name="inapp_update_action_ignore">Ignore</string>
 </resources>

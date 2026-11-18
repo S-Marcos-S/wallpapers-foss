@@ -16,7 +16,10 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.collectAsState
@@ -24,8 +27,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
@@ -33,6 +38,7 @@ import dev.viagarawallpapers.analytics.AnalyticsManager
 import dev.viagarawallpapers.data.Prefs
 import dev.viagarawallpapers.ui.settings.SettingsScreen
 import dev.viagarawallpapers.ui.theme.WallpapersTheme
+import dev.viagarawallpapers.ui.update.InAppUpdateFloatingBanner
 import dev.viagarawallpapers.ui.wallpaper.WallpaperPickerScreen
 import dev.viagarawallpapers.update.UpdateManager
 import dev.viagarawallpapers.wallpaper.DailyWallpaperManager
@@ -88,36 +94,52 @@ class MainActivity : ComponentActivity() {
                     MaterialTheme.colorScheme.surface
                 }
 
+                var isPreviewingWallpaper by remember { mutableStateOf(false) }
+
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = surfaceColor,
                 ) {
-                    AnimatedContent(
-                        targetState = currentScreen,
-                        transitionSpec = {
-                            fadeIn() togetherWith fadeOut()
-                        },
-                        label = "ScreenTransition",
-                    ) { targetScreen ->
-                        when (targetScreen) {
-                            Screen.WALLPAPERS -> {
-                                WallpaperPickerScreen(
-                                    onOpenSettings = {
-                                        currentScreen = Screen.SETTINGS
-                                    },
-                                )
-                            }
-                            Screen.SETTINGS -> {
-                                BackHandler {
-                                    currentScreen = Screen.WALLPAPERS
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        AnimatedContent(
+                            targetState = currentScreen,
+                            transitionSpec = {
+                                fadeIn() togetherWith fadeOut()
+                            },
+                            label = "ScreenTransition",
+                        ) { targetScreen ->
+                            when (targetScreen) {
+                                Screen.WALLPAPERS -> {
+                                    WallpaperPickerScreen(
+                                        onOpenSettings = {
+                                            currentScreen = Screen.SETTINGS
+                                        },
+                                        onPreviewStateChanged = { isPreviewActive ->
+                                            isPreviewingWallpaper = isPreviewActive
+                                        },
+                                    )
                                 }
-                                SettingsScreen(
-                                    onNavigateBack = {
+                                Screen.SETTINGS -> {
+                                    BackHandler {
                                         currentScreen = Screen.WALLPAPERS
-                                    },
-                                )
+                                    }
+                                    SettingsScreen(
+                                        onNavigateBack = {
+                                            currentScreen = Screen.WALLPAPERS
+                                        },
+                                    )
+                                }
                             }
                         }
+
+                        // Floating In-App Update Notification Banner (only for new stable releases)
+                        InAppUpdateFloatingBanner(
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .navigationBarsPadding()
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            isVisible = !isPreviewingWallpaper && currentScreen == Screen.WALLPAPERS,
+                        )
                     }
                 }
             }

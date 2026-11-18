@@ -103,6 +103,7 @@ import dev.viagarawallpapers.update.RootInstaller
 import dev.viagarawallpapers.update.UpdateInfo
 import dev.viagarawallpapers.update.UpdateManager
 import dev.viagarawallpapers.util.HapticUtil
+import dev.viagarawallpapers.util.MarkdownUtil
 import dev.viagarawallpapers.util.StorageStats
 import dev.viagarawallpapers.util.StorageUtil
 import dev.viagarawallpapers.wallpaper.DailyWallpaperManager
@@ -665,7 +666,7 @@ private fun UpdateStatusCard(
 
                 if (updateInfo.changelog.isNotBlank()) {
                     val formattedChangelog = remember(updateInfo.changelog, colorScheme) {
-                        formatMarkdownToAnnotated(updateInfo.changelog, colorScheme)
+                        MarkdownUtil.formatMarkdownToAnnotated(updateInfo.changelog, colorScheme)
                     }
 
                     Column(
@@ -856,85 +857,6 @@ private fun UpdateStatusCard(
                 }
             }
         }
-    }
-}
-
-private fun formatMarkdownToAnnotated(text: String, colorScheme: ColorScheme): AnnotatedString {
-    return buildAnnotatedString {
-        val lines = text.lines()
-        lines.forEachIndexed { index, rawLine ->
-            val trimmed = rawLine.trim()
-            when {
-                trimmed.startsWith("---") || trimmed.startsWith("***") -> {
-                    // subtle spacing
-                }
-                trimmed.startsWith("###") -> {
-                    val content = trimmed.removePrefix("###").trim()
-                    withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = colorScheme.primary)) {
-                        append(content)
-                    }
-                }
-                trimmed.startsWith("##") -> {
-                    val content = trimmed.removePrefix("##").trim()
-                    withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = colorScheme.primary)) {
-                        append(content)
-                    }
-                }
-                trimmed.startsWith("#") -> {
-                    val content = trimmed.removePrefix("#").trim()
-                    withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = colorScheme.primary)) {
-                        append(content)
-                    }
-                }
-                trimmed.startsWith("- ") || trimmed.startsWith("* ") -> {
-                    append("• ")
-                    parseInlineMarkdown(trimmed.substring(2).trim(), colorScheme)
-                }
-                else -> {
-                    parseInlineMarkdown(trimmed, colorScheme)
-                }
-            }
-
-            if (index < lines.lastIndex && trimmed.isNotBlank()) {
-                append("\n")
-            }
-        }
-    }
-}
-
-private fun AnnotatedString.Builder.parseInlineMarkdown(line: String, colorScheme: ColorScheme) {
-    val tokenRegex = Regex("""(\*\*(.+?)\*\*|\*(.+?)\*|`(.+?)`)""")
-    var lastIndex = 0
-    for (match in tokenRegex.findAll(line)) {
-        if (match.range.first > lastIndex) {
-            append(line.substring(lastIndex, match.range.first))
-        }
-        val fullMatch = match.value
-        when {
-            fullMatch.startsWith("**") && fullMatch.endsWith("**") -> {
-                val inner = fullMatch.substring(2, fullMatch.length - 2)
-                withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                    append(inner)
-                }
-            }
-            fullMatch.startsWith("*") && fullMatch.endsWith("*") -> {
-                val inner = fullMatch.substring(1, fullMatch.length - 1)
-                withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                    append(inner)
-                }
-            }
-            fullMatch.startsWith("`") && fullMatch.endsWith("`") -> {
-                val inner = fullMatch.substring(1, fullMatch.length - 1)
-                withStyle(SpanStyle(fontFamily = FontFamily.Monospace, background = colorScheme.surfaceContainerHighest)) {
-                    append(inner)
-                }
-            }
-            else -> append(fullMatch)
-        }
-        lastIndex = match.range.last + 1
-    }
-    if (lastIndex < line.length) {
-        append(line.substring(lastIndex))
     }
 }
 
