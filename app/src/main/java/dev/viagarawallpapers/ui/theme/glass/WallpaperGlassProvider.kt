@@ -192,7 +192,11 @@ object WallpaperGlassProvider {
             val path = "/data/system/users/0/wallpaper"
             val file = File(path)
             if (file.exists() && file.canRead()) {
-                val b = BitmapFactory.decodeFile(file.absolutePath)
+                val b = WallpaperRepository.decodeSampledBitmapFromFile(
+                    filePath = file.absolutePath,
+                    reqWidth = 1080,
+                    reqHeight = 2400,
+                )
                 if (b != null) return b
             }
         }

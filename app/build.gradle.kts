@@ -37,8 +37,8 @@ android {
         applicationId = "dev.viagarawallpapers"
         minSdk = 26
         targetSdk = 35
-        versionCode = 18
-        versionName = "1.1.2"
+        versionCode = 19
+        versionName = "1.1.3"
 
         buildConfigField("String", "GIT_SHA", "\"$gitCommitSha\"")
         buildConfigField("Long", "BUILD_TIME_MILLIS", "${buildTimeMillis}L")

@@ -1,5 +1,4 @@
-### 🌌 Wallpapers FOSS v1.1.2 (Beta)
+### 🌌 Wallpapers FOSS v1.1.3 (Beta)
 
-- **Notificações em Segundo Plano:** Sincronização inteligente de novos papéis de parede adicionados ao catálogo.
-- **Eficiência Energética:** Verificação em segundo plano via WorkManager com impacto imperceptível na bateria.
-- **Configurações:** Opção para ativar ou desativar alertas de novos wallpapers.
+- **Correção de Crash em Novos Wallpapers:** Prevenção de estouro de memória no Canvas ao abrir papéis de parede em altíssima resolução.
+- **Renderização Otimizada:** Decodificação com amostragem inteligente preservando fidelidade visual máxima sem comprometer a performance.
