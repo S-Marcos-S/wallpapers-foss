@@ -107,6 +107,7 @@ import dev.viagarawallpapers.util.StorageStats
 import dev.viagarawallpapers.util.StorageUtil
 import dev.viagarawallpapers.wallpaper.DailyWallpaperManager
 import dev.viagarawallpapers.wallpaper.DailyWallpaperTarget
+import dev.viagarawallpapers.wallpaper.WallpaperSyncWorker
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -142,6 +143,8 @@ fun SettingsScreen(
     val downloadStatus by UpdateManager.downloadStatus.collectAsState()
     var isBetaTester by remember { mutableStateOf(UpdateManager.isBetaTesterEnabled(context)) }
     var isAnalyticsEnabled by remember { mutableStateOf(AnalyticsManager.isEnabled(context)) }
+    val wallpaperNotificationsFlow by prefs.wallpaperNotificationsEnabled.collectAsState(initial = true)
+    var isWallpaperNotificationsEnabled by remember(wallpaperNotificationsFlow) { mutableStateOf(wallpaperNotificationsFlow) }
 
     LaunchedEffect(Unit) {
         UpdateManager.checkForUpdates(context, force = true)
@@ -411,6 +414,67 @@ fun SettingsScreen(
                                 AnalyticsManager.setEnabled(context, checked)
                                 scope.launch {
                                     prefs.setAnonymousAnalyticsEnabled(checked)
+                                }
+                                HapticUtil.tick(view, hapticsEnabled)
+                            },
+                        )
+                    }
+                }
+            }
+
+            // Section: Notifications
+            item {
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = stringResource(R.string.settings_section_notifications),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = colorScheme.primary,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                )
+            }
+
+            item {
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    cornerRadiusDp = 14.dp,
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 12.dp),
+                        ) {
+                            Text(
+                                text = stringResource(R.string.settings_wallpaper_notifications_title),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium,
+                                color = colorScheme.onSurface,
+                            )
+                            Text(
+                                text = stringResource(R.string.settings_wallpaper_notifications_desc),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = colorScheme.onSurfaceVariant,
+                            )
+                        }
+
+                        Switch(
+                            checked = isWallpaperNotificationsEnabled,
+                            onCheckedChange = { checked ->
+                                isWallpaperNotificationsEnabled = checked
+                                scope.launch {
+                                    prefs.setWallpaperNotificationsEnabled(checked)
+                                }
+                                if (checked) {
+                                    WallpaperSyncWorker.schedule(context)
+                                } else {
+                                    WallpaperSyncWorker.cancel(context)
                                 }
                                 HapticUtil.tick(view, hapticsEnabled)
                             },

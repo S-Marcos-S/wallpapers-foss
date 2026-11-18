@@ -14,6 +14,7 @@ import android.content.Intent
 import android.net.Uri
 import dev.viagarawallpapers.analytics.AnalyticsManager
 import dev.viagarawallpapers.util.WindowSizeUtil
+import kotlin.math.sqrt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -418,9 +419,95 @@ object WallpaperRepository {
         }.getOrNull()
     }
 
-    suspend fun getCachedOrDownloadBitmap(context: Context, url: String): Bitmap? = withContext(Dispatchers.IO) {
+    const val MAX_CANVAS_BITMAP_BYTES: Long = 80 * 1024 * 1024L // 80 MB (safe headroom under Canvas.MAX_BITMAP_SIZE = 100MB)
+
+    fun calculateInSampleSize(
+        rawWidth: Int,
+        rawHeight: Int,
+        reqWidth: Int,
+        reqHeight: Int,
+        maxByteLimit: Long = MAX_CANVAS_BITMAP_BYTES,
+    ): Int {
+        if (rawWidth <= 0 || rawHeight <= 0) return 1
+        var inSampleSize = 1
+
+        if (rawHeight > reqHeight || rawWidth > reqWidth) {
+            val halfH = rawHeight / 2
+            val halfW = rawWidth / 2
+            while ((halfH / inSampleSize) >= reqHeight && (halfW / inSampleSize) >= reqWidth) {
+                inSampleSize *= 2
+            }
+        }
+
+        // Guarantee that decoded memory does not exceed maxByteLimit
+        while (inSampleSize <= 64 &&
+            ((rawWidth.toLong() / inSampleSize) * (rawHeight.toLong() / inSampleSize) * 4L) > maxByteLimit
+        ) {
+            inSampleSize *= 2
+        }
+
+        return inSampleSize.coerceAtLeast(1)
+    }
+
+    fun decodeSampledBitmapFromFile(
+        filePath: String,
+        reqWidth: Int,
+        reqHeight: Int,
+        maxByteLimit: Long = MAX_CANVAS_BITMAP_BYTES,
+    ): Bitmap? {
+        val file = File(filePath)
+        if (!file.exists() || !file.canRead() || file.length() == 0L) return null
+
+        val options = BitmapFactory.Options().apply {
+            inJustDecodeBounds = true
+        }
+        BitmapFactory.decodeFile(filePath, options)
+
+        val rawW = options.outWidth
+        val rawH = options.outHeight
+        if (rawW <= 0 || rawH <= 0) return null
+
+        val inSampleSize = calculateInSampleSize(rawW, rawH, reqWidth, reqHeight, maxByteLimit)
+
+        val decodeOptions = BitmapFactory.Options().apply {
+            this.inSampleSize = inSampleSize
+            inPreferredConfig = Bitmap.Config.ARGB_8888
+        }
+
+        val decoded = runCatching { BitmapFactory.decodeFile(filePath, decodeOptions) }.getOrNull()
+            ?: return null
+
+        // Defense-in-depth clamp: if unexpected byte count still exceeds maxByteLimit, scale safely
+        if (decoded.allocationByteCount > maxByteLimit) {
+            val ratio = sqrt(maxByteLimit.toDouble() / decoded.allocationByteCount.toDouble())
+            val safeW = (decoded.width * ratio).toInt().coerceAtLeast(1)
+            val safeH = (decoded.height * ratio).toInt().coerceAtLeast(1)
+            val clamped = runCatching {
+                Bitmap.createScaledBitmap(decoded, safeW, safeH, true)
+            }.getOrNull()
+            if (clamped != null && clamped !== decoded) {
+                decoded.recycle()
+                return clamped
+            }
+        }
+
+        return decoded
+    }
+
+    suspend fun getCachedOrDownloadBitmap(
+        context: Context,
+        url: String,
+        reqWidth: Int = 0,
+        reqHeight: Int = 0,
+    ): Bitmap? = withContext(Dispatchers.IO) {
         val file = getCachedOrDownloadFile(context, url) ?: return@withContext null
-        runCatching { BitmapFactory.decodeFile(file.absolutePath) }.getOrNull()
+        val (screenW, screenH) = WindowSizeUtil.getRealWindowSize(context)
+        val baseW = if (screenW > 0f) screenW.toInt() else 1080
+        val baseH = if (screenH > 0f) screenH.toInt() else 2400
+        val targetW = if (reqWidth > 0) reqWidth else maxOf(baseW * 2, 2160)
+        val targetH = if (reqHeight > 0) reqHeight else maxOf(baseH * 2, 3840)
+
+        decodeSampledBitmapFromFile(file.absolutePath, targetW, targetH)
     }
 
     fun isBitmapFramedToDisplay(
@@ -466,10 +553,15 @@ object WallpaperRepository {
         if (bmpW <= 0f || bmpH <= 0f) return src
 
         // If the bitmap is already framed to screen aspect ratio and no user transform is applied, return src directly
+        // ONLY if it does not exceed safe canvas limits or 4K height
         if (scale == 1f && offsetX == 0f && offsetY == 0f) {
             val screenAspect = viewW / viewH
             val bmpAspect = bmpW / bmpH
-            if (kotlin.math.abs(screenAspect - bmpAspect) < 0.015f && bmpH >= 1920f) {
+            if (kotlin.math.abs(screenAspect - bmpAspect) < 0.015f &&
+                bmpH >= 1920f &&
+                bmpH <= 3840f &&
+                src.allocationByteCount <= MAX_CANVAS_BITMAP_BYTES
+            ) {
                 return src
             }
         }

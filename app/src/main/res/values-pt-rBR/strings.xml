@@ -116,6 +116,9 @@
     <string name="settings_section_privacy">Privacidade</string>
     <string name="settings_analytics_title">Estatísticas anônimas de uso</string>
     <string name="settings_analytics_desc">Ajuda a estimar usuários ativos sem coletar dados pessoais, endereços IP ou identificadores do dispositivo</string>
+    <string name="settings_section_notifications">Notificações</string>
+    <string name="settings_wallpaper_notifications_title">Notificações de novos papéis de parede</string>
+    <string name="settings_wallpaper_notifications_desc">Receba avisos quando novos wallpapers forem adicionados ao catálogo</string>
     <string name="settings_section_about">Sobre</string>
     <string name="settings_app_name">Wallpapers FOSS</string>
     <string name="settings_source_code">Código Fonte</string>

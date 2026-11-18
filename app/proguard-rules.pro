@@ -5,6 +5,7 @@
 -keep class dev.viagarawallpapers.wallpaper.VideoLiveWallpaperService { *; }
 -keep class dev.viagarawallpapers.wallpaper.WallpaperCheckAlarmReceiver { *; }
 -keep class dev.viagarawallpapers.update.MyPackageReplacedReceiver { *; }
+-keep class dev.viagarawallpapers.wallpaper.WallpaperSyncWorker { *; }
 
 # Keep data models used with JSON
 -keepclassmembers class dev.viagarawallpapers.update.UpdateInfo { *; }
