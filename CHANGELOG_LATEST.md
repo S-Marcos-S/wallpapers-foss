@@ -1,6 +1,3 @@
-### 🌌 Wallpapers FOSS v1.3.0
+### 🌌 Wallpapers FOSS v1.3.1 (Beta)
 
-- **Notificação Flutuante de Atualização:** Balão translúcido in-app informando novas versões estáveis com changelog e opções para instalar ou ignorar.
-- **Otimização de Memória e Bitmaps:** Prevenção de estouro de memória no canvas com downsampling inteligente de imagens grandes.
-- **Notificações em Segundo Plano:** Sincronização periódica de novos papéis de parede via WorkManager.
-- **Telemetria Aprimorada:** Inclusão anônima de modelo de dispositivo e resolução de tela para compatibilidade.
+- **Legibilidade do Balão de Atualização:** Reduzida a transparência e adicionada elevação com sombra suave para melhor contraste e nitidez sobre os wallpapers.

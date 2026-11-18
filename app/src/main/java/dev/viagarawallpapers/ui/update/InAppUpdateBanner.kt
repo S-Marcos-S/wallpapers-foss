@@ -6,7 +6,9 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -43,6 +45,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -51,6 +54,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.viagarawallpapers.R
 import dev.viagarawallpapers.ui.theme.GlassCard
+import dev.viagarawallpapers.ui.theme.dynamicBorderColor
+import dev.viagarawallpapers.ui.theme.dynamicSurfaceColor
 import dev.viagarawallpapers.update.DownloadStatus
 import dev.viagarawallpapers.update.RootInstaller
 import dev.viagarawallpapers.update.UpdateManager
@@ -97,9 +102,33 @@ fun InAppUpdateFloatingBanner(
             MarkdownUtil.formatMarkdownToAnnotated(rawChangelog, colorScheme)
         }
 
+        val isDark = isSystemInDarkTheme()
+        val surfaceFallback = dynamicSurfaceColor(
+            alpha = if (isDark) 0.94f else 0.96f,
+            tintFraction = 0.08f,
+        )
+        val borderStroke = BorderStroke(
+            1.dp,
+            dynamicBorderColor(
+                alpha = if (isDark) 0.40f else 0.45f,
+                tintFraction = 0.25f,
+            ),
+        )
+        val glassTintOpacity = if (isDark) 82 else 88
+
         GlassCard(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .shadow(
+                    elevation = 12.dp,
+                    shape = RoundedCornerShape(20.dp),
+                    ambientColor = colorScheme.scrim.copy(alpha = 0.4f),
+                    spotColor = colorScheme.scrim.copy(alpha = 0.5f),
+                ),
             cornerRadiusDp = 20.dp,
+            fallbackColor = surfaceFallback,
+            border = borderStroke,
+            tintOpacity = glassTintOpacity,
         ) {
             Column(
                 modifier = Modifier
@@ -159,7 +188,7 @@ fun InAppUpdateFloatingBanner(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp))
-                            .background(colorScheme.surfaceContainerHighest.copy(alpha = 0.5f))
+                            .background(colorScheme.surfaceContainerHighest.copy(alpha = if (isDark) 0.75f else 0.85f))
                             .padding(10.dp),
                     ) {
                         Text(
