@@ -34,7 +34,7 @@ Coleção de papéis de parede projetados para celulares.
 
 - **Imagens e Vídeos:** Catálogo com papéis de parede estáticos (WebP/JPG) e animados (Live Wallpapers em MP4).
 - **Curadoria Inteligente:** Classificação de títulos, categorias e paletas de cores via IA.
-- **Resolução Original:** Armazenamento dos arquivos com 100% de fidelidade e miniaturas WebP otimizadas para carregamento rápido.
+- **Resoluções FullHD/2k/4k:** Armazenamento dos arquivos com 100% de fidelidade e miniaturas WebP otimizadas para carregamento rápido.
 
 ---
 
@@ -55,7 +55,7 @@ Coleção de papéis de parede projetados para celulares.
 
 | Método de Descrição | Quantidade | Porcentagem | Barra de Progresso |
 | :--- | :---: | :---: | :--- |
-| **IA Avançada (Google Gemini)** | **1040** | **99.5%** | `███████████████████░` |
+| **IA Avançada ** | **1040** | **99.5%** | `███████████████████░` |
 | **IA Simples (MobileNetV3 / Local)** | **0** | **0.0%** | `░░░░░░░░░░░░░░░░░░░░` |
 | **Curadoria Manual (Humana)** | **5** | **0.5%** | `░░░░░░░░░░░░░░░░░░░░` |
 | **Pendentes / Sem Descrição** | **0** | **0.0%** | `░░░░░░░░░░░░░░░░░░░░` |
