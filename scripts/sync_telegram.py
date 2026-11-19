@@ -440,6 +440,15 @@ async def main():
     print(f"Fetching entity for @{CHANNEL_USERNAME}...")
     entity = await client.get_entity(CHANNEL_USERNAME)
 
+    # Query total high-definition documents in channel
+    try:
+        from telethon.tl.types import InputMessagesFilterDocument
+        docs = await client.get_messages(entity, 0, filter=InputMessagesFilterDocument)
+        catalog["telegram_hd_total"] = docs.total
+        print(f"Total de wallpapers em alta definição no canal @{CHANNEL_USERNAME}: {docs.total}")
+    except Exception as e:
+        print(f"Notice: Could not query total HD documents in channel: {e}")
+
     new_items: List[Dict[str, Any]] = []
 
     # 1. Recent messages scan (New wallpapers)

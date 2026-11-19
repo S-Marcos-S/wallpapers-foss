@@ -183,7 +183,43 @@ def analyze_catalog(catalog: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def generate_stats_markdown(storage: Dict[str, Any], catalog_stats: Dict[str, Any]) -> str:
+def get_telegram_hd_total(catalog: Dict[str, Any]) -> Optional[int]:
+    """Fetches total high-definition documents in the Telegram channel or reads cached value."""
+    api_id = int(os.environ.get("TELEGRAM_API_ID", 0))
+    api_hash = os.environ.get("TELEGRAM_API_HASH", "")
+    session_str = os.environ.get("TELEGRAM_STRING_SESSION", "")
+    channel = os.environ.get("CHANNEL_USERNAME", "amandinhawallpaper")
+
+    if api_id and api_hash and session_str:
+        try:
+            import asyncio
+            from telethon import TelegramClient
+            from telethon.sessions import StringSession
+            from telethon.tl.types import InputMessagesFilterDocument
+
+            async def _fetch():
+                client = TelegramClient(StringSession(session_str), api_id, api_hash)
+                await client.start()
+                docs = await client.get_messages(channel, 0, filter=InputMessagesFilterDocument)
+                total = docs.total
+                await client.disconnect()
+                return total
+
+            total = asyncio.run(_fetch())
+            if total is not None:
+                catalog["telegram_hd_total"] = total
+                return total
+        except Exception as e:
+            print(f"Notice: Live Telegram HD count query skipped ({e})")
+
+    return catalog.get("telegram_hd_total")
+
+
+def generate_stats_markdown(
+    storage: Dict[str, Any],
+    catalog_stats: Dict[str, Any],
+    telegram_hd_total: Optional[int] = None
+) -> str:
     tz_brt = timezone(timedelta(hours=-3))
     now_brt = datetime.now(tz_brt).strftime("%d/%m/%Y às %H:%M (Horário de Brasília)")
     now_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
@@ -214,6 +250,27 @@ def generate_stats_markdown(storage: Dict[str, Any], catalog_stats: Dict[str, An
         "",
         f"> **Última atualização:** {now_brt} (`{now_utc}`)",
         "",
+    ]
+
+    if telegram_hd_total is not None and telegram_hd_total > 0:
+        curated_pct = (total_wallpapers / telegram_hd_total * 100) if telegram_hd_total > 0 else 0.0
+        bar_filled = int(curated_pct // 5)
+        bar_empty = max(0, 20 - bar_filled)
+        progress_bar = f"`{'█' * bar_filled}{'░' * bar_empty}`"
+        remaining = max(0, telegram_hd_total - total_wallpapers)
+
+        lines.extend([
+            "### 📊 Progresso da Curadoria de Wallpapers em Alta Definição",
+            "",
+            "| Métrica | Quantidade | Detalhes |",
+            "| :--- | :---: | :--- |",
+            f"| **Wallpapers HD no Canal Oficial** | **{telegram_hd_total}** | Origem: [`@amandinhawallpaper`](https://t.me/amandinhawallpaper) |",
+            f"| **Wallpapers Curados no Aplicativo** | **{total_wallpapers}** | **{curated_pct:.1f}%** {progress_bar} |",
+            f"| **Restantes para Curadoria** | **{remaining}** | Fila de expansão e curadoria contínua |",
+            "",
+        ])
+
+    lines.extend([
         "### Armazenamento e Consumo em Disco",
         "",
         "| Diretório / Recurso | Tamanho em Gigabytes | Tamanho em Megabytes | Arquivos |",
@@ -241,7 +298,7 @@ def generate_stats_markdown(storage: Dict[str, Any], catalog_stats: Dict[str, An
         "",
         "| Categoria | Quantidade | Proporção |",
         "| :--- | :---: | :---: |",
-    ]
+    ])
 
     for cat_id, count in sorted(cats.items(), key=lambda x: x[1], reverse=True):
         label = cat_id.replace("_", " ").capitalize()
@@ -298,8 +355,9 @@ def main():
     catalog = load_catalog()
     catalog_stats = analyze_catalog(catalog)
     storage_stats = get_storage_stats(catalog)
+    telegram_hd_total = get_telegram_hd_total(catalog)
 
-    stats_md = generate_stats_markdown(storage_stats, catalog_stats)
+    stats_md = generate_stats_markdown(storage_stats, catalog_stats, telegram_hd_total)
 
     update_readme(stats_md)
     write_step_summary(stats_md)

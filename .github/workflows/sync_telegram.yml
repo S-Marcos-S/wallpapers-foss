@@ -70,6 +70,10 @@ jobs:
         run: |
           python scripts/classify_with_gemini.py
 
+      - name: Update statistics in README
+        run: |
+          python scripts/wallpaper_stats.py
+
       - name: Commit and push new wallpapers
         run: |
           git config user.name "github-actions[bot]"
@@ -78,9 +82,9 @@ jobs:
           # Remove any full-res media files to keep Git repo lightweight (served via CDN/Telegram)
           rm -rf wallpapers/full/* wallpapers/staging/* 2>/dev/null || true
 
-          if [ -n "$(git status --porcelain wallpapers/thumbnails/ wallpapers/catalog.json wallpapers/notification.json)" ]; then
-            git add wallpapers/thumbnails/ wallpapers/catalog.json wallpapers/notification.json
-            git commit -m "chore(wallpapers): auto-sync curated wallpapers [skip ci]"
+          if [ -n "$(git status --porcelain README.md wallpapers/thumbnails/ wallpapers/catalog.json wallpapers/notification.json)" ]; then
+            git add README.md wallpapers/thumbnails/ wallpapers/catalog.json wallpapers/notification.json
+            git commit -m "chore(wallpapers): auto-sync curated wallpapers and update README stats [skip ci]"
             git pull --rebase origin main
             git push origin main
             echo "Successfully updated wallpapers catalog."
