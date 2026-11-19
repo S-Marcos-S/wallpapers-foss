@@ -1,5 +1,5 @@
-### 🌌 Wallpapers FOSS v1.5.2
+### 🌌 Wallpapers FOSS v1.5.0
 
-- **Cancelamento de Download:** Botão direto na notificação para cancelar downloads individuais ou em lote.
 - **Seleção Múltipla & Download em Lote:** Selecione vários papéis de parede com toque longo e baixe todos de uma vez.
-- **Transição Fluida na Barra Superior:** Animações suaves ao alternar entre o modo padrão e o modo de seleção.
+- **Botão Cancelar na Notificação:** Cancele o download a qualquer momento direto pela notificação.
+- **Transição Fluida na Barra Superior:** Animações suaves ao alternar para o modo de seleção.
