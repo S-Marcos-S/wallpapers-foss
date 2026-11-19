@@ -41,50 +41,58 @@ Coleção de papéis de parede projetados para celulares.
 <!-- START_WALLPAPER_STATS -->
 ## Painel de Estatísticas Diárias do Repositório
 
-> **Última atualização:** 19/11/2026 às 09:37 (Horário de Brasília) (`2026-11-19 12:37 UTC`)
+> **Última atualização:** 19/11/2026 às 18:34 (Horário de Brasília) (`2026-11-19 21:34 UTC`)
+
+### 📊 Progresso da Curadoria de Wallpapers em Alta Definição
+
+| Métrica | Quantidade | Detalhes |
+| :--- | :---: | :--- |
+| **Wallpapers HD no Canal Oficial** | **20425** | Origem: [`@amandinhawallpaper`](https://t.me/amandinhawallpaper) |
+| **Wallpapers Curados no Aplicativo** | **1202** | **5.9%** `█░░░░░░░░░░░░░░░░░░░` |
+| **Restantes para Curadoria** | **19223** | Fila de expansão e curadoria contínua |
 
 ### Armazenamento e Consumo em Disco
 
 | Diretório / Recurso | Tamanho em Gigabytes | Tamanho em Megabytes | Arquivos |
 | :--- | :---: | :---: | :---: |
-| **Wallpapers em Alta Resolução (`wallpapers/full/`)** | **3.262 GB** | 3340.3 MB | 1138 |
-| **Miniaturas Otimizadas (`wallpapers/thumbnails/`)** | **0.041 GB** | 41.9 MB | 1138 |
-| **Total do Repositório** | **3.310 GB** | **3389.4 MB** | 2373 |
+| **Wallpapers em Alta Resolução (`wallpapers/full/`)** | **3.467 GB** | 3550.5 MB | 1210 |
+| **Miniaturas Otimizadas (`wallpapers/thumbnails/`)** | **0.045 GB** | 46.0 MB | 1210 |
+| **Total do Repositório** | **3.519 GB** | **3604.0 MB** | 2522 |
 
 ### Status das Descrições e Classificação por IA
 
 | Método de Descrição | Quantidade | Porcentagem | Barra de Progresso |
 | :--- | :---: | :---: | :--- |
-| **IA Avançada (Google Gemini)** | **1125** | **99.6%** | `███████████████████░` |
+| **IA Avançada (Google Gemini)** | **1197** | **99.6%** | `███████████████████░` |
 | **IA Simples (MobileNetV3 / Local)** | **0** | **0.0%** | `░░░░░░░░░░░░░░░░░░░░` |
 | **Curadoria Manual (Humana)** | **5** | **0.4%** | `░░░░░░░░░░░░░░░░░░░░` |
 | **Pendentes / Sem Descrição** | **0** | **0.0%** | `░░░░░░░░░░░░░░░░░░░░` |
-| **Total Geral no Catálogo** | **1130** | **100%** | |
+| **Total Geral no Catálogo** | **1202** | **100%** | |
 
 ### Tipos de Papéis de Parede
 
-- **Imagens Estáticas (WebP / JPG):** **1120** (99.1%)
-- **Live Wallpapers / Vídeos (MP4):** **10** (0.9%)
+- **Imagens Estáticas (WebP / JPG):** **1192** (99.2%)
+- **Live Wallpapers / Vídeos (MP4):** **10** (0.8%)
 
 ### Distribuição por Categorias
 
 | Categoria | Quantidade | Proporção |
 | :--- | :---: | :---: |
-| `Oled` | **254** | 22.5% |
-| `Anime` | **189** | 16.7% |
-| `Abstract` | **138** | 12.2% |
-| `Nature` | **109** | 9.6% |
-| `Fantasy` | **94** | 8.3% |
-| `Minimal` | **71** | 6.3% |
-| `Cars` | **70** | 6.2% |
-| `Animals` | **69** | 6.1% |
-| `Games` | **53** | 4.7% |
-| `Space` | **48** | 4.2% |
-| `City` | **12** | 1.1% |
-| `Live` | **10** | 0.9% |
-| `Cyberpunk` | **6** | 0.5% |
-| `Movies` | **3** | 0.3% |
-| `Images` | **3** | 0.3% |
+| `Oled` | **280** | 23.3% |
+| `Anime` | **190** | 15.8% |
+| `Abstract` | **144** | 12.0% |
+| `Nature` | **122** | 10.1% |
+| `Fantasy` | **94** | 7.8% |
+| `Cars` | **76** | 6.3% |
+| `Animals` | **75** | 6.2% |
+| `Minimal` | **68** | 5.7% |
+| `Games` | **62** | 5.2% |
+| `Space` | **50** | 4.2% |
+| `City` | **18** | 1.5% |
+| `Live` | **10** | 0.8% |
+| `Cyberpunk` | **7** | 0.6% |
+| `Images` | **3** | 0.2% |
+| `Movies` | **2** | 0.2% |
 | `Animation` | **1** | 0.1% |
 
 <!-- END_WALLPAPER_STATS -->
