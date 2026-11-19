@@ -79,13 +79,15 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          # Remove any full-res media files to keep Git repo lightweight (served via CDN/Telegram)
-          rm -rf wallpapers/full/* wallpapers/staging/* 2>/dev/null || true
+          # Clean up any staging temporary directory
+          rm -rf wallpapers/staging 2>/dev/null || true
 
           if [ -n "$(git status --porcelain README.md wallpapers/thumbnails/ wallpapers/catalog.json wallpapers/notification.json)" ]; then
             git add README.md wallpapers/thumbnails/ wallpapers/catalog.json wallpapers/notification.json
             git commit -m "chore(wallpapers): auto-sync curated wallpapers and update README stats [skip ci]"
-            git pull --rebase origin main
+            # Ensure working tree is clean of any unstaged noise before rebase
+            git checkout -- . 2>/dev/null || git restore . 2>/dev/null || true
+            git pull --rebase --autostash origin main
             git push origin main
             echo "Successfully updated wallpapers catalog."
           else
