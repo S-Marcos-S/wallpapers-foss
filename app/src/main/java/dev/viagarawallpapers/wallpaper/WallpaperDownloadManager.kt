@@ -23,6 +23,7 @@ import dev.viagarawallpapers.BuildConfig
 import dev.viagarawallpapers.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
@@ -35,20 +36,30 @@ import java.io.OutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.security.MessageDigest
+import java.util.concurrent.CancellationException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
 object WallpaperDownloadManager {
 
+    const val ACTION_CANCEL_DOWNLOAD = "dev.viagarawallpapers.action.CANCEL_DOWNLOAD"
     private const val CHANNEL_ID = "wallpaper_downloads_channel"
     private const val NOTIFICATION_ID = 4005
+    private const val CANCEL_REQUEST_CODE = 4006
 
     private val downloadScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val mainHandler = Handler(Looper.getMainLooper())
 
     private val queueChannel = Channel<WallpaperDownloadTask>(Channel.UNLIMITED)
     private val isWorkerRunning = AtomicBoolean(false)
+    private val isCancelled = AtomicBoolean(false)
+
+    @Volatile
+    private var workerJob: Job? = null
+
+    @Volatile
+    private var activeConnection: HttpURLConnection? = null
 
     // Set of wallpaper IDs currently active (queued or downloading)
     private val activeItemIds = ConcurrentHashMap.newKeySet<String>()
@@ -79,6 +90,7 @@ object WallpaperDownloadManager {
             return
         }
 
+        isCancelled.set(false)
         activeItemIds.add(item.id)
         val currentActive = activeCount.incrementAndGet()
         batchTotal.incrementAndGet()
@@ -100,15 +112,93 @@ object WallpaperDownloadManager {
         startWorkerIfNeeded(appCtx)
     }
 
+    fun downloadWallpapers(context: Context, items: List<WallpaperItem>) {
+        if (items.isEmpty()) return
+        val appCtx = context.applicationContext
+
+        val itemsToQueue = items.filter { !activeItemIds.contains(it.id) }
+        if (itemsToQueue.isEmpty()) {
+            mainHandler.post {
+                Toast.makeText(
+                    appCtx,
+                    appCtx.getString(R.string.wallpaper_download_already_queued),
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+            return
+        }
+
+        isCancelled.set(false)
+        itemsToQueue.forEach { item ->
+            activeItemIds.add(item.id)
+            activeCount.incrementAndGet()
+            batchTotal.incrementAndGet()
+            queueChannel.trySend(WallpaperDownloadTask(appCtx, item))
+        }
+
+        mainHandler.post {
+            val message = if (itemsToQueue.size == 1) {
+                appCtx.getString(R.string.wallpaper_download_starting, itemsToQueue.first().name)
+            } else {
+                appCtx.getString(R.string.wallpaper_download_multiple_starting, itemsToQueue.size)
+            }
+            Toast.makeText(appCtx, message, Toast.LENGTH_SHORT).show()
+        }
+
+        ensureChannelCreated(appCtx)
+        postInitialProgressNotification(appCtx, itemsToQueue.first(), activeCount.get())
+        startWorkerIfNeeded(appCtx)
+    }
+
+    fun cancelAllDownloads(context: Context) {
+        val wasActive = isWorkerRunning.get() || activeCount.get() > 0
+        isCancelled.set(true)
+
+        // Drain any tasks remaining in queue channel
+        while (queueChannel.tryReceive().isSuccess) {
+            // drained
+        }
+
+        // Abort active HTTP connection immediately to unblock network IO
+        runCatching { activeConnection?.disconnect() }
+
+        // Cancel running worker coroutine
+        workerJob?.cancel()
+        workerJob = null
+
+        // Reset state and clear tracking structures
+        activeItemIds.clear()
+        batchCompleted.set(0)
+        batchTotal.set(0)
+        activeCount.set(0)
+        isWorkerRunning.set(false)
+
+        cancelNotification(context)
+
+        if (wasActive) {
+            mainHandler.post {
+                Toast.makeText(
+                    context.applicationContext,
+                    context.getString(R.string.wallpaper_download_cancelled),
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+    }
+
     private fun startWorkerIfNeeded(context: Context) {
         if (isWorkerRunning.compareAndSet(false, true)) {
-            downloadScope.launch {
+            workerJob = downloadScope.launch {
                 var lastSavedUri: Uri? = null
                 var lastSavedMimeType = "image/png"
                 var lastSavedName: String? = null
 
                 try {
                     while (true) {
+                        if (isCancelled.get()) {
+                            break
+                        }
+
                         val task = queueChannel.tryReceive().getOrNull()
                         if (task == null) {
                             break
@@ -132,6 +222,10 @@ object WallpaperDownloadManager {
                             )
                         } catch (e: Exception) {
                             error = e
+                        }
+
+                        if (isCancelled.get()) {
+                            break
                         }
 
                         activeItemIds.remove(item.id)
@@ -160,6 +254,7 @@ object WallpaperDownloadManager {
                     }
                 } finally {
                     isWorkerRunning.set(false)
+                    val wasCancelled = isCancelled.getAndSet(false)
 
                     val completedCount = batchCompleted.get()
 
@@ -169,7 +264,7 @@ object WallpaperDownloadManager {
                     activeCount.set(0)
                     activeItemIds.clear()
 
-                    if (completedCount > 0 && lastSavedName != null) {
+                    if (!wasCancelled && completedCount > 0 && lastSavedName != null) {
                         postCompletedNotification(
                             context = context,
                             completedCount = completedCount,
@@ -235,6 +330,7 @@ object WallpaperDownloadManager {
             var conn: HttpURLConnection? = null
             var redirects = 0
             while (redirects < 6) {
+                if (isCancelled.get()) throw CancellationException("Download cancelled")
                 val connection = (URL(currentUrl).openConnection() as HttpURLConnection).apply {
                     connectTimeout = 15000
                     readTimeout = 30000
@@ -260,6 +356,7 @@ object WallpaperDownloadManager {
                 throw IllegalStateException("Server returned HTTP ${conn?.responseCode}")
             }
 
+            activeConnection = conn
             val totalBytes = conn.contentLengthLong.takeIf { it > 0 } ?: 0L
 
             val cacheDir = File(context.cacheDir, "wallpaper_cache").apply { if (!exists()) mkdirs() }
@@ -267,20 +364,23 @@ object WallpaperDownloadManager {
             val cacheTarget = File(cacheDir, hash)
             val cacheTemp = File(cacheDir, "$hash.tmp")
 
-            val uri = conn.inputStream.use { input ->
-                saveStreamToStorageAndCache(
-                    context = context,
-                    input = input,
-                    totalBytes = totalBytes,
-                    fileName = fileName,
-                    mimeType = mimeType,
-                    isVideo = isVideo,
-                    cacheTempFile = cacheTemp,
-                    onProgress = onProgress
-                )
+            val uri = try {
+                conn.inputStream.use { input ->
+                    saveStreamToStorageAndCache(
+                        context = context,
+                        input = input,
+                        totalBytes = totalBytes,
+                        fileName = fileName,
+                        mimeType = mimeType,
+                        isVideo = isVideo,
+                        cacheTempFile = cacheTemp,
+                        onProgress = onProgress
+                    )
+                }
+            } finally {
+                activeConnection = null
+                conn.disconnect()
             }
-
-            conn.disconnect()
 
             if (cacheTemp.exists() && cacheTemp.length() > 0) {
                 cacheTemp.renameTo(cacheTarget)
@@ -430,6 +530,9 @@ object WallpaperDownloadManager {
         var lastPercent = -1
 
         while (input.read(buffer).also { bytesRead = it } != -1) {
+            if (isCancelled.get()) {
+                throw CancellationException("Download cancelled by user")
+            }
             output1.write(buffer, 0, bytesRead)
             output2?.write(buffer, 0, bytesRead)
             totalRead += bytesRead
@@ -482,6 +585,8 @@ object WallpaperDownloadManager {
         activeCount: Int,
         progressPercent: Int,
     ) {
+        if (isCancelled.get()) return
+
         runCatching {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 val hasPermission = ContextCompat.checkSelfPermission(
@@ -506,6 +611,16 @@ object WallpaperDownloadManager {
                 "${item.name} • $progressPercent%"
             }
 
+            val cancelIntent = Intent(context, WallpaperDownloadCancelReceiver::class.java).apply {
+                action = ACTION_CANCEL_DOWNLOAD
+            }
+            val cancelPendingIntent = PendingIntent.getBroadcast(
+                context,
+                CANCEL_REQUEST_CODE,
+                cancelIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+
             val notification = NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(android.R.drawable.stat_sys_download)
                 .setContentTitle(title)
@@ -515,6 +630,11 @@ object WallpaperDownloadManager {
                 .setOnlyAlertOnce(true)
                 .setPriority(NotificationCompat.PRIORITY_LOW)
                 .setCategory(NotificationCompat.CATEGORY_PROGRESS)
+                .addAction(
+                    android.R.drawable.ic_menu_close_clear_cancel,
+                    context.getString(R.string.wallpaper_download_cancel),
+                    cancelPendingIntent
+                )
                 .build()
 
             notificationManager.notify(NOTIFICATION_ID, notification)

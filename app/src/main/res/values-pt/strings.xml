@@ -87,6 +87,13 @@
     <string name="wallpaper_download_completed_title">Download concluído</string>
     <string name="wallpaper_download_completed_single">Papel de parede “%1$s” salvo na galeria</string>
     <string name="wallpaper_download_completed_multiple">%1$d papéis de parede salvos na galeria</string>
+    <string name="wallpaper_download_multiple_starting">Iniciando download de %1$d papéis de parede…</string>
+    <string name="wallpaper_selected_count">%1$d selecionados</string>
+    <string name="wallpaper_select_all">Selecionar todos</string>
+    <string name="wallpaper_deselect_all">Desmarcar todos</string>
+    <string name="wallpaper_download_selected">Baixar selecionados</string>
+    <string name="wallpaper_download_cancel">Cancelar</string>
+    <string name="wallpaper_download_cancelled">Download cancelado</string>
 
     <!-- Common UI -->
     <string name="action_back">Voltar</string>

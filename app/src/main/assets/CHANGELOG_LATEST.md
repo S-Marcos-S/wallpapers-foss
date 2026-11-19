@@ -1,3 +1,5 @@
 ### 🌌 Wallpapers FOSS v1.5.0
 
-- **Troca Diária Inteligente:** Pré-download otimizado durante o dia via WorkManager e aplicação instantânea à meia-noite sem gastar bateria ou dados extras.
+- **Seleção Múltipla & Download em Lote:** Selecione vários papéis de parede com toque longo e baixe todos de uma vez.
+- **Botão Cancelar na Notificação:** Cancele o download a qualquer momento direto pela notificação.
+- **Transição Fluida na Barra Superior:** Animações suaves ao alternar para o modo de seleção.
