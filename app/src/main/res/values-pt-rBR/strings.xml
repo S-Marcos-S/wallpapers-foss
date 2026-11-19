@@ -92,6 +92,8 @@
     <string name="wallpaper_select_all">Selecionar todos</string>
     <string name="wallpaper_deselect_all">Desmarcar todos</string>
     <string name="wallpaper_download_selected">Baixar selecionados</string>
+    <string name="wallpaper_download_cancel">Cancelar</string>
+    <string name="wallpaper_download_cancelled">Download cancelado</string>
 
     <!-- Common UI -->
     <string name="action_back">Voltar</string>
