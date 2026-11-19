@@ -100,6 +100,43 @@ object WallpaperDownloadManager {
         startWorkerIfNeeded(appCtx)
     }
 
+    fun downloadWallpapers(context: Context, items: List<WallpaperItem>) {
+        if (items.isEmpty()) return
+        val appCtx = context.applicationContext
+
+        val itemsToQueue = items.filter { !activeItemIds.contains(it.id) }
+        if (itemsToQueue.isEmpty()) {
+            mainHandler.post {
+                Toast.makeText(
+                    appCtx,
+                    appCtx.getString(R.string.wallpaper_download_already_queued),
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+            return
+        }
+
+        itemsToQueue.forEach { item ->
+            activeItemIds.add(item.id)
+            activeCount.incrementAndGet()
+            batchTotal.incrementAndGet()
+            queueChannel.trySend(WallpaperDownloadTask(appCtx, item))
+        }
+
+        mainHandler.post {
+            val message = if (itemsToQueue.size == 1) {
+                appCtx.getString(R.string.wallpaper_download_starting, itemsToQueue.first().name)
+            } else {
+                appCtx.getString(R.string.wallpaper_download_multiple_starting, itemsToQueue.size)
+            }
+            Toast.makeText(appCtx, message, Toast.LENGTH_SHORT).show()
+        }
+
+        ensureChannelCreated(appCtx)
+        postInitialProgressNotification(appCtx, itemsToQueue.first(), activeCount.get())
+        startWorkerIfNeeded(appCtx)
+    }
+
     private fun startWorkerIfNeeded(context: Context) {
         if (isWorkerRunning.compareAndSet(false, true)) {
             downloadScope.launch {

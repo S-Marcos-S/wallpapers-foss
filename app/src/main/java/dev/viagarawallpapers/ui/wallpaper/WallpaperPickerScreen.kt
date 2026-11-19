@@ -21,6 +21,7 @@ import android.graphics.SurfaceTexture
 import android.media.MediaPlayer
 import android.view.TextureView
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -33,7 +34,12 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -86,8 +92,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Deselect
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
@@ -95,6 +103,7 @@ import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.text.BasicTextField
@@ -192,7 +201,7 @@ private fun lerp(start: Float, stop: Float, fraction: Float): Float {
     return start + (stop - start) * fraction
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun WallpaperPickerScreen(
     onOpenSettings: () -> Unit,
@@ -216,6 +225,8 @@ fun WallpaperPickerScreen(
     var isApplying by remember { mutableStateOf(false) }
     val animProgress = remember { Animatable(0f) }
     var rootCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    var selectedIds by remember { mutableStateOf<Set<String>>(emptySet()) }
+    val isInSelectionMode = selectedIds.isNotEmpty()
 
     LaunchedEffect(activePreviewState != null) {
         onPreviewStateChanged?.invoke(activePreviewState != null)
@@ -258,8 +269,12 @@ fun WallpaperPickerScreen(
         }
     }
 
-    BackHandler(enabled = activePreviewState != null) {
-        if (!isApplying) dismissPreview()
+    BackHandler(enabled = selectedIds.isNotEmpty() || activePreviewState != null) {
+        if (selectedIds.isNotEmpty()) {
+            selectedIds = emptySet()
+        } else if (!isApplying) {
+            dismissPreview()
+        }
     }
 
     Box(
@@ -270,7 +285,7 @@ fun WallpaperPickerScreen(
     ) {
         HorizontalPager(
             state = pagerState,
-            userScrollEnabled = activePreviewState == null,
+            userScrollEnabled = activePreviewState == null && selectedIds.isEmpty(),
             modifier = Modifier.fillMaxSize(),
         ) { pageIndex ->
             val pageCategory = categories.getOrNull(pageIndex)
@@ -441,13 +456,24 @@ fun WallpaperPickerScreen(
                 } else {
                     items(pageWallpapers, key = { it.id }) { item ->
                         val isBeingPreviewed = activePreviewState?.item?.id == item.id
+                        val isSelected = selectedIds.contains(item.id)
                         WallpaperGridItem(
                             item = item,
                             columns = wallpaperColumns,
                             isFavorite = favoriteIds.contains(item.id),
                             isBeingPreviewed = isBeingPreviewed,
+                            isSelected = isSelected,
+                            isInSelectionMode = isInSelectionMode,
                             onToggleFavorite = {
                                 WallpaperRepository.toggleFavorite(context, item.id)
+                            },
+                            onToggleSelect = {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                selectedIds = if (isSelected) selectedIds - item.id else selectedIds + item.id
+                            },
+                            onLongClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                selectedIds = if (isSelected) selectedIds - item.id else selectedIds + item.id
                             },
                             onClick = { boundsInRoot: Rect, thumb: Bitmap? ->
                                 val root = rootCoordinates
@@ -516,6 +542,35 @@ fun WallpaperPickerScreen(
         }
     }
 
+        val currentTabWallpapers = remember(catalog, selectedCategoryId, searchQuery, favoriteIds) {
+            val all = catalog?.wallpapers ?: emptyList()
+            val query = searchQuery.trim().lowercase()
+
+            val baseList = when {
+                selectedCategoryId.equals("all", ignoreCase = true) -> all
+                selectedCategoryId.equals("favorites", ignoreCase = true) -> all.filter { favoriteIds.contains(it.id) }
+                else -> all.filter {
+                    it.category.equals(selectedCategoryId, ignoreCase = true)
+                }
+            }
+
+            if (query.isEmpty()) {
+                baseList
+            } else {
+                baseList.filter { item ->
+                    item.name.lowercase().contains(query) ||
+                    item.id.lowercase().contains(query) ||
+                    item.id.replace("tg_", "").contains(query) ||
+                    item.searchTerms.any { it.lowercase().contains(query) } ||
+                    item.tags.any { it.lowercase().contains(query) } ||
+                    item.category.lowercase().contains(query) ||
+                    item.author.lowercase().contains(query)
+                }
+            }
+        }
+        val currentTabIds = remember(currentTabWallpapers) { currentTabWallpapers.map { it.id }.toSet() }
+        val isAllSelected = currentTabIds.isNotEmpty() && selectedIds.containsAll(currentTabIds)
+
         // Floating Glass Header across all tabs
         GlassHeader(
             isGlassActive = isGlassActive,
@@ -557,6 +612,31 @@ fun WallpaperPickerScreen(
                     coroutineScope.launch {
                         pagerState.animateScrollToPage(targetIndex)
                     }
+                }
+            },
+            selectedCount = selectedIds.size,
+            onClearSelection = {
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                selectedIds = emptySet()
+            },
+            onSelectAll = if (currentTabWallpapers.isNotEmpty()) {
+                {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    selectedIds = if (isAllSelected) {
+                        selectedIds - currentTabIds
+                    } else {
+                        selectedIds + currentTabIds
+                    }
+                }
+            } else null,
+            isAllSelected = isAllSelected,
+            onDownloadSelected = {
+                val all = catalog?.wallpapers ?: emptyList()
+                val selectedItems = all.filter { selectedIds.contains(it.id) }
+                if (selectedItems.isNotEmpty()) {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    WallpaperDownloadManager.downloadWallpapers(context, selectedItems)
+                    selectedIds = emptySet()
                 }
             },
             modifier = Modifier
@@ -705,13 +785,18 @@ private fun WallpaperSearchBar(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun WallpaperGridItem(
     item: WallpaperItem,
     columns: Int = 2,
     isFavorite: Boolean,
     isBeingPreviewed: Boolean,
+    isSelected: Boolean = false,
+    isInSelectionMode: Boolean = false,
     onToggleFavorite: () -> Unit,
+    onToggleSelect: () -> Unit = {},
+    onLongClick: () -> Unit = {},
     onClick: (Rect, Bitmap?) -> Unit,
 ) {
     val context = LocalContext.current
@@ -742,6 +827,15 @@ private fun WallpaperGridItem(
     val titleFontSize = if (columns >= 4) 9.sp else if (columns == 3) 11.sp else 13.sp
     val authorFontSize = if (columns >= 4) 8.sp else if (columns == 3) 9.sp else 11.sp
 
+    val animatedScale by animateFloatAsState(
+        targetValue = if (isSelected) 0.93f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMediumLow
+        ),
+        label = "item_scale_anim",
+    )
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -749,19 +843,34 @@ private fun WallpaperGridItem(
             .onGloballyPositioned { itemCoordinates = it }
             .graphicsLayer {
                 alpha = if (isBeingPreviewed) 0f else 1f
+                scaleX = animatedScale
+                scaleY = animatedScale
             }
             .clip(shape)
             .background(fallbackColor)
-            .border(1.dp, colorScheme.outlineVariant.copy(alpha = 0.35f), shape)
-            .clickable(onClick = {
-                val coords = itemCoordinates
-                val rect = if (coords != null && coords.isAttached) {
-                    coords.boundsInRoot()
-                } else {
-                    Rect.Zero
+            .border(
+                width = if (isSelected) 2.5.dp else 1.dp,
+                color = if (isSelected) MaterialTheme.colorScheme.primary else colorScheme.outlineVariant.copy(alpha = 0.35f),
+                shape = shape
+            )
+            .combinedClickable(
+                onClick = {
+                    if (isInSelectionMode) {
+                        onToggleSelect()
+                    } else {
+                        val coords = itemCoordinates
+                        val rect = if (coords != null && coords.isAttached) {
+                            coords.boundsInRoot()
+                        } else {
+                            Rect.Zero
+                        }
+                        onClick(rect, thumbnailBitmap)
+                    }
+                },
+                onLongClick = {
+                    onLongClick()
                 }
-                onClick(rect, thumbnailBitmap)
-            }),
+            ),
     ) {
         if (thumbnailBitmap != null) {
             Image(
@@ -783,6 +892,15 @@ private fun WallpaperGridItem(
             }
         }
 
+        // Translucent primary overlay when selected
+        if (isSelected) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.20f))
+            )
+        }
+
         // Live Wallpaper indicator tag for video items
         if (item.isLive || item.type == "video") {
             Box(
@@ -802,31 +920,64 @@ private fun WallpaperGridItem(
             }
         }
 
-        // Heart favorite button above each wallpaper (top right)
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(heartPadding)
-                .size(heartBoxSize)
-                .clip(CircleShape)
-                .background(Color.Black.copy(alpha = 0.35f))
-                .clickable { onToggleFavorite() },
-            contentAlignment = Alignment.Center,
-        ) {
-            if (isFavorite) {
-                Icon(
-                    imageVector = Icons.Filled.Favorite,
-                    contentDescription = "Favorito",
-                    tint = Color(0xFFE53935),
-                    modifier = Modifier.size(heartIconSize),
-                )
-            } else {
-                Icon(
-                    imageVector = Icons.Filled.FavoriteBorder,
-                    contentDescription = "Favoritar",
-                    tint = Color.White.copy(alpha = 0.90f),
-                    modifier = Modifier.size(heartIconSize),
-                )
+        // Selection badge / Checkbox (when in selection mode) or Heart favorite button
+        if (isInSelectionMode) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(heartPadding)
+                    .size(heartBoxSize)
+                    .clip(CircleShape)
+                    .background(
+                        if (isSelected) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            Color.Black.copy(alpha = 0.45f)
+                        }
+                    )
+                    .border(
+                        width = 1.5.dp,
+                        color = Color.White.copy(alpha = if (isSelected) 0.95f else 0.70f),
+                        shape = CircleShape,
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (isSelected) {
+                    Icon(
+                        imageVector = Icons.Filled.Check,
+                        contentDescription = "Selecionado",
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(heartIconSize),
+                    )
+                }
+            }
+        } else {
+            // Heart favorite button above each wallpaper (top right)
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(heartPadding)
+                    .size(heartBoxSize)
+                    .clip(CircleShape)
+                    .background(Color.Black.copy(alpha = 0.35f))
+                    .clickable { onToggleFavorite() },
+                contentAlignment = Alignment.Center,
+            ) {
+                if (isFavorite) {
+                    Icon(
+                        imageVector = Icons.Filled.Favorite,
+                        contentDescription = "Favorito",
+                        tint = Color(0xFFE53935),
+                        modifier = Modifier.size(heartIconSize),
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Filled.FavoriteBorder,
+                        contentDescription = "Favoritar",
+                        tint = Color.White.copy(alpha = 0.90f),
+                        modifier = Modifier.size(heartIconSize),
+                    )
+                }
             }
         }
 
@@ -2198,6 +2349,11 @@ private fun GlassHeader(
     categories: List<WallpaperCategory>,
     selectedCategoryId: String,
     onSelectCategory: (String) -> Unit,
+    selectedCount: Int = 0,
+    onClearSelection: () -> Unit = {},
+    onSelectAll: (() -> Unit)? = null,
+    isAllSelected: Boolean = false,
+    onDownloadSelected: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val isDark = isSystemInDarkTheme()
@@ -2280,97 +2436,195 @@ private fun GlassHeader(
         ) {
             TopAppBar(
                 title = {
-                    Text(
-                        text = stringResource(R.string.wallpaper_picker_title),
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                },
-                actions = {
-                    val columnsDesc = stringResource(R.string.wallpaper_columns_desc, wallpaperColumns)
-                    val addWallpaperDesc = stringResource(R.string.wallpaper_add_submission_desc)
-                    IconButton(
-                        onClick = onToggleColumns,
-                        modifier = Modifier.semantics { contentDescription = columnsDesc },
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(30.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(
-                                    if (isGlassActive) {
-                                        Color.White.copy(alpha = if (isDark) 0.14f else 0.24f)
-                                    } else {
-                                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
-                                    }
+                    AnimatedContent(
+                        targetState = selectedCount > 0,
+                        transitionSpec = {
+                            (fadeIn(animationSpec = tween(220, delayMillis = 40)) + slideInVertically { -it / 2 })
+                                .togetherWith(fadeOut(animationSpec = tween(160)) + slideOutVertically { it / 2 })
+                        },
+                        label = "top_bar_title_anim",
+                    ) { inSelection ->
+                        if (inSelection) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                IconButton(
+                                    onClick = onClearSelection,
+                                    modifier = Modifier.size(36.dp),
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Close,
+                                        contentDescription = stringResource(R.string.action_close),
+                                        tint = MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                }
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    text = stringResource(R.string.wallpaper_selected_count, selectedCount),
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface,
                                 )
-                                .border(
-                                    0.8.dp,
-                                    if (isGlassActive) {
-                                        Color.White.copy(alpha = if (isDark) 0.22f else 0.35f)
-                                    } else {
-                                        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
-                                    },
-                                    RoundedCornerShape(8.dp)
-                                ),
-                            contentAlignment = Alignment.Center,
-                        ) {
+                            }
+                        } else {
                             Text(
-                                text = "${wallpaperColumns}x",
-                                style = MaterialTheme.typography.labelSmall,
+                                text = stringResource(R.string.wallpaper_picker_title),
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface,
-                                fontSize = 11.sp,
                             )
                         }
                     }
-                    IconButton(
-                        onClick = onAddWallpaper,
-                        modifier = Modifier.semantics { contentDescription = addWallpaperDesc },
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(30.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(
-                                    if (isGlassActive) {
-                                        Color.White.copy(alpha = if (isDark) 0.14f else 0.24f)
-                                    } else {
-                                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+                },
+                actions = {
+                    AnimatedContent(
+                        targetState = selectedCount > 0,
+                        transitionSpec = {
+                            (fadeIn(animationSpec = tween(240, delayMillis = 50)) + scaleIn(initialScale = 0.8f, animationSpec = tween(240, delayMillis = 50)))
+                                .togetherWith(fadeOut(animationSpec = tween(160)) + scaleOut(targetScale = 0.8f, animationSpec = tween(160)))
+                        },
+                        label = "top_bar_actions_anim",
+                    ) { inSelection ->
+                        if (inSelection) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                if (onSelectAll != null) {
+                                    IconButton(onClick = onSelectAll) {
+                                        Icon(
+                                            imageVector = if (isAllSelected) Icons.Filled.Deselect else Icons.Filled.SelectAll,
+                                            contentDescription = if (isAllSelected) stringResource(R.string.wallpaper_deselect_all) else stringResource(R.string.wallpaper_select_all),
+                                            tint = MaterialTheme.colorScheme.onSurface,
+                                        )
                                     }
-                                )
-                                .border(
-                                    0.8.dp,
-                                    if (isGlassActive) {
-                                        Color.White.copy(alpha = if (isDark) 0.22f else 0.35f)
-                                    } else {
-                                        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
-                                    },
-                                    RoundedCornerShape(8.dp)
-                                ),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Add,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.size(17.dp),
-                            )
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .height(34.dp)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(
+                                            if (isGlassActive) {
+                                                Color.White.copy(alpha = if (isDark) 0.22f else 0.35f)
+                                            } else {
+                                                MaterialTheme.colorScheme.primaryContainer
+                                            }
+                                        )
+                                        .border(
+                                            1.dp,
+                                            if (isGlassActive) {
+                                                Color.White.copy(alpha = if (isDark) 0.35f else 0.50f)
+                                            } else {
+                                                MaterialTheme.colorScheme.primary.copy(alpha = 0.50f)
+                                            },
+                                            RoundedCornerShape(10.dp)
+                                        )
+                                        .clickable(onClick = onDownloadSelected)
+                                        .padding(horizontal = 12.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Filled.Download,
+                                            contentDescription = null,
+                                            tint = if (isGlassActive) Color.White else MaterialTheme.colorScheme.onPrimaryContainer,
+                                            modifier = Modifier.size(18.dp),
+                                        )
+                                        Text(
+                                            text = stringResource(R.string.wallpaper_download),
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (isGlassActive) Color.White else MaterialTheme.colorScheme.onPrimaryContainer,
+                                        )
+                                    }
+                                }
+                            }
+                        } else {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                val columnsDesc = stringResource(R.string.wallpaper_columns_desc, wallpaperColumns)
+                                val addWallpaperDesc = stringResource(R.string.wallpaper_add_submission_desc)
+                                IconButton(
+                                    onClick = onToggleColumns,
+                                    modifier = Modifier.semantics { contentDescription = columnsDesc },
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(30.dp)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(
+                                                if (isGlassActive) {
+                                                    Color.White.copy(alpha = if (isDark) 0.14f else 0.24f)
+                                                } else {
+                                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+                                                }
+                                            )
+                                            .border(
+                                                0.8.dp,
+                                                if (isGlassActive) {
+                                                    Color.White.copy(alpha = if (isDark) 0.22f else 0.35f)
+                                                } else {
+                                                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
+                                                },
+                                                RoundedCornerShape(8.dp)
+                                            ),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Text(
+                                            text = "${wallpaperColumns}x",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            fontSize = 11.sp,
+                                        )
+                                    }
+                                }
+                                IconButton(
+                                    onClick = onAddWallpaper,
+                                    modifier = Modifier.semantics { contentDescription = addWallpaperDesc },
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(30.dp)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(
+                                                if (isGlassActive) {
+                                                    Color.White.copy(alpha = if (isDark) 0.14f else 0.24f)
+                                                } else {
+                                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+                                                }
+                                            )
+                                            .border(
+                                                0.8.dp,
+                                                if (isGlassActive) {
+                                                    Color.White.copy(alpha = if (isDark) 0.22f else 0.35f)
+                                                } else {
+                                                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
+                                                },
+                                                RoundedCornerShape(8.dp)
+                                            ),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Filled.Add,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onSurface,
+                                            modifier = Modifier.size(17.dp),
+                                        )
+                                    }
+                                }
+                                IconButton(onClick = onOpenGallery) {
+                                    Icon(
+                                        imageVector = Icons.Filled.PhotoLibrary,
+                                        contentDescription = stringResource(R.string.wallpaper_picker_gallery),
+                                        tint = MaterialTheme.colorScheme.onSurface,
+                                    )
+                                }
+                                IconButton(onClick = onOpenSettings) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Settings,
+                                        contentDescription = stringResource(R.string.settings_title),
+                                        tint = MaterialTheme.colorScheme.onSurface,
+                                    )
+                                }
+                            }
                         }
-                    }
-                    IconButton(onClick = onOpenGallery) {
-                        Icon(
-                            imageVector = Icons.Filled.PhotoLibrary,
-                            contentDescription = stringResource(R.string.wallpaper_picker_gallery),
-                            tint = MaterialTheme.colorScheme.onSurface,
-                        )
-                    }
-                    IconButton(onClick = onOpenSettings) {
-                        Icon(
-                            imageVector = Icons.Filled.Settings,
-                            contentDescription = stringResource(R.string.settings_title),
-                            tint = MaterialTheme.colorScheme.onSurface,
-                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(

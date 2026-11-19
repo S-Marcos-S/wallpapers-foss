@@ -87,6 +87,11 @@
     <string name="wallpaper_download_completed_title">Download completed</string>
     <string name="wallpaper_download_completed_single">Wallpaper “%1$s” saved to gallery</string>
     <string name="wallpaper_download_completed_multiple">%1$d wallpapers saved to gallery</string>
+    <string name="wallpaper_download_multiple_starting">Starting download of %1$d wallpapers…</string>
+    <string name="wallpaper_selected_count">%1$d selected</string>
+    <string name="wallpaper_select_all">Select all</string>
+    <string name="wallpaper_deselect_all">Deselect all</string>
+    <string name="wallpaper_download_selected">Download selected</string>
 
     <!-- Common UI -->
     <string name="action_back">Back</string>
