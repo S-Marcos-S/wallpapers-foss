@@ -24,10 +24,13 @@ class ViagaraWallpapersApp : Application() {
         AnalyticsManager.init(this)
         UpdateManager.init(this)
         CoroutineScope(Dispatchers.IO).launch {
-            if (prefs.autoDailyWallpaperEnabled.first()) {
+            val dailyEnabled = prefs.autoDailyWallpaperEnabled.first()
+            val notifEnabled = prefs.wallpaperNotificationsEnabled.first()
+
+            if (dailyEnabled) {
                 WallpaperCheckAlarmReceiver.scheduleDailyChange(this@ViagaraWallpapersApp)
             }
-            if (prefs.wallpaperNotificationsEnabled.first()) {
+            if (dailyEnabled || notifEnabled) {
                 WallpaperSyncWorker.schedule(this@ViagaraWallpapersApp)
             }
         }

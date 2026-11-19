@@ -21,6 +21,7 @@ import sys
 import json
 import asyncio
 import hashlib
+import re
 from typing import List, Dict, Any, Optional, Set
 from telethon import TelegramClient
 from telethon.sessions import StringSession
@@ -288,9 +289,19 @@ async def process_media_message(
                     return None
 
     # Extract title from message text or caption if available
-    title = msg.text.strip().split("\n")[0] if msg.text else ""
-    if not title or len(title) > 40:
-        title = f"Live Wallpaper #{msg.id}" if media_type == "video" else f"Wallpaper #{msg.id}"
+    title = ""
+    if msg.text:
+        lines = [line.strip() for line in msg.text.strip().split("\n") if line.strip()]
+        if lines:
+            first_line = lines[0]
+            # Strip Telegram hashtags (e.g., #4k, #wallpaper, #art)
+            clean_line = re.sub(r"#\w+", "", first_line).strip()
+            clean_line = re.sub(r"\s+", " ", clean_line).strip()
+            if clean_line and len(clean_line) <= 40:
+                title = clean_line
+
+    if not title:
+        title = f"Live Wallpaper #{msg.id}" if media_type == "video" else f"Papel de Parede #{msg.id}"
 
     new_entry = {
         "id": item_id,

@@ -472,7 +472,7 @@ fun SettingsScreen(
                                 scope.launch {
                                     prefs.setWallpaperNotificationsEnabled(checked)
                                 }
-                                if (checked) {
+                                if (checked || isAutoDailyEnabled) {
                                     WallpaperSyncWorker.schedule(context)
                                 } else {
                                     WallpaperSyncWorker.cancel(context)

@@ -12,6 +12,7 @@ import sys
 import json
 import time
 import io
+import re
 from typing import Dict, Any, List, Optional, Tuple
 from PIL import Image
 
@@ -25,6 +26,8 @@ from classify_with_gemini import (
     STANDARD_CATEGORIES,
     generate_dynamic_notification,
     save_notification,
+    is_english_title,
+    translate_title_with_gemini,
 )
 
 # Optional Torchvision for offline neural vision
@@ -192,14 +195,22 @@ def should_skip_classification(item: Dict[str, Any]) -> bool:
         return True
 
     name = item.get("name", "")
-    is_generic_name = name.startswith("Wallpaper #") or name.startswith("Live Wallpaper #")
+    is_generic_name = (
+        name.startswith("Wallpaper #")
+        or name.startswith("Live Wallpaper #")
+        or name.startswith("Papel de Parede #")
+    )
     is_generic_cat = item.get("category", "") in ("images", "unknown", "")
 
     # Always classify if name or category is generic
     if is_generic_name or is_generic_cat:
         return False
 
-    # Skip if already classified by Gemini and has real name
+    # Items with English titles should never be skipped: they must be curated to Portuguese
+    if is_english_title(name):
+        return False
+
+    # Skip if already classified by Gemini and has real Portuguese name
     if item.get("classified_by") == "gemini":
         return True
 
@@ -251,7 +262,9 @@ def main():
     # Filter candidates with strict priority:
     # 0: Explicit new IDs (.newly_added_ids.json)
     # 1: Brand new / unclassified / generic name wallpapers
-    # 2: Existing Simple AI wallpapers to be upgraded by Gemini
+    # 2: Existing wallpapers with English titles needing Portuguese curation
+    # 3: Existing Simple AI wallpapers to be upgraded by Gemini
+    # 4: Other candidates
     candidates = [w for w in wallpapers if not should_skip_classification(w)]
 
     def get_candidate_priority(item: Dict[str, Any]) -> int:
@@ -260,17 +273,26 @@ def main():
         name = item.get("name", "")
         cat = item.get("category", "")
         cb = item.get("classified_by")
-        if cb is None or cb == "" or name.startswith("Wallpaper #") or name.startswith("Live Wallpaper #") or cat in ("images", "unknown", ""):
+        if (
+            cb is None
+            or cb == ""
+            or name.startswith("Wallpaper #")
+            or name.startswith("Live Wallpaper #")
+            or name.startswith("Papel de Parede #")
+            or cat in ("images", "unknown", "")
+        ):
             return 1
-        if cb == "simple_ai":
+        if is_english_title(name):
             return 2
-        return 3
+        if cb == "simple_ai":
+            return 3
+        return 4
 
     to_classify = sorted(candidates, key=get_candidate_priority)
-    print(f"Wallpapers needing classification: {len(to_classify)}")
+    print(f"Wallpapers needing classification/curation: {len(to_classify)}")
 
     if not to_classify:
-        print("All wallpapers are already classified. Nothing to do!")
+        print("All wallpapers are already well-classified and curated in Portuguese. Nothing to do!")
         return
 
     active_provider = PROVIDER
@@ -282,17 +304,31 @@ def main():
         item_id = item["id"]
         image_bytes = fetch_image_bytes(item)
         if not image_bytes:
+            # If thumbnail cannot be downloaded but title has English words, translate title via text API fallback
+            if is_english_title(item.get("name", "")) and GEMINI_API_KEY:
+                translated = translate_title_with_gemini(item["name"], GEMINI_API_KEY)
+                if translated and translated != item["name"]:
+                    print(f"[{idx+1}/{min(len(to_classify), MAX_PER_RUN)}] Translated title via text API: '{item['name']}' -> '{translated}'")
+                    item["name"] = translated
+                    updated_count += 1
+                    updated_items.append(item)
+                    catalog["wallpapers"] = wallpapers
+                    with open(CATALOG_PATH, "w", encoding="utf-8") as f:
+                        json.dump(catalog, f, indent=2, ensure_ascii=False)
+                        f.write("\n")
+                    time.sleep(1.0)
+                    continue
             print(f" -> Skipping {item_id}: could not load image bytes.")
             continue
 
         result = None
         used_method = ""
 
-        # Attempt Gemini Flash
+        # Attempt Gemini Flash with current title passed for translation and curation
         if active_provider in ("gemini", "both_with_fallback"):
             if GEMINI_API_KEY:
-                print(f"[{idx+1}/{min(len(to_classify), MAX_PER_RUN)}] Classifying {item_id} with Gemini Flash...")
-                result = analyze_image_with_gemini(image_bytes, GEMINI_API_KEY)
+                print(f"[{idx+1}/{min(len(to_classify), MAX_PER_RUN)}] Classifying/Curating {item_id} with Gemini Flash...")
+                result = analyze_image_with_gemini(image_bytes, GEMINI_API_KEY, current_title=item.get("name"))
                 if result:
                     used_method = "gemini"
                     gemini_fail_count = 0

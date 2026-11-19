@@ -18,7 +18,16 @@ import java.util.Calendar
 class WallpaperCheckAlarmReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
+        val action = intent.action
+        if (action != ACTION_CHECK_WALLPAPERS &&
+            action != Intent.ACTION_BOOT_COMPLETED &&
+            action != Intent.ACTION_MY_PACKAGE_REPLACED
+        ) {
+            return
+        }
+
         val appCtx = context.applicationContext
+        val pendingResult = goAsync()
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
@@ -26,7 +35,7 @@ class WallpaperCheckAlarmReceiver : BroadcastReceiver() {
                 val isEnabled = prefs.autoDailyWallpaperEnabled.first()
 
                 if (isEnabled) {
-                    // Reagenda imediatamente a próxima meia-noite (00:00)
+                    // Re-schedule the next midnight alarm
                     scheduleDailyChange(appCtx)
 
                     val lastTimestamp = prefs.dailyWallpaperLastTimestamp.first()
@@ -34,13 +43,18 @@ class WallpaperCheckAlarmReceiver : BroadcastReceiver() {
 
                     if (lastTimestamp <= 0L || DailyWallpaperManager.isDifferentDay(lastTimestamp, now)) {
                         DailyWallpaperManager.advanceToNextWallpaper(appCtx, isUserDislike = false)
+                    } else {
+                        // Ensure tomorrow's wallpaper is pre-cached for the next midnight
+                        DailyWallpaperManager.prefetchNextWallpaper(appCtx)
                     }
                 }
 
-                // Aproveita o disparo diário para sincronizar catálogo sem custo extra de bateria
+                // Leverage the wake window to sync catalog without battery overhead
                 WallpaperRepository.loadCatalog(appCtx)
             } catch (e: Exception) {
                 Log.e(TAG, "Failed during daily wallpaper change", e)
+            } finally {
+                pendingResult.finish()
             }
         }
     }
@@ -51,7 +65,7 @@ class WallpaperCheckAlarmReceiver : BroadcastReceiver() {
         private const val REQUEST_CODE = 4092
 
         /**
-         * Calcula o timestamp exato da próxima meia-noite local (00:00:00) no fuso do dispositivo.
+         * Calculates timestamp of the next local midnight (00:00:00).
          */
         fun calculateNextMidnightMs(): Long {
             val cal = Calendar.getInstance().apply {
@@ -68,8 +82,8 @@ class WallpaperCheckAlarmReceiver : BroadcastReceiver() {
         }
 
         /**
-         * Agenda um alarme pontual no AlarmManager para as 00:00:00 locais.
-         * Utiliza AlarmManager.RTC com setAndAllowWhileIdle para mínimo consumo de bateria (zero wakeups intermediários).
+         * Schedules exact wakeup alarm at midnight local time using RTC_WAKEUP.
+         * Falls back gracefully to inexact allow-while-idle if exact alarms are not granted.
          */
         fun scheduleDailyChange(context: Context) {
             runCatching {
@@ -86,15 +100,45 @@ class WallpaperCheckAlarmReceiver : BroadcastReceiver() {
 
                 val triggerAtMillis = calculateNextMidnightMs()
 
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    alarmManager.setAndAllowWhileIdle(
-                        AlarmManager.RTC,
-                        triggerAtMillis,
-                        pendingIntent,
-                    )
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    try {
+                        if (alarmManager.canScheduleExactAlarms()) {
+                            alarmManager.setExactAndAllowWhileIdle(
+                                AlarmManager.RTC_WAKEUP,
+                                triggerAtMillis,
+                                pendingIntent,
+                            )
+                        } else {
+                            alarmManager.setAndAllowWhileIdle(
+                                AlarmManager.RTC_WAKEUP,
+                                triggerAtMillis,
+                                pendingIntent,
+                            )
+                        }
+                    } catch (e: SecurityException) {
+                        alarmManager.setAndAllowWhileIdle(
+                            AlarmManager.RTC_WAKEUP,
+                            triggerAtMillis,
+                            pendingIntent,
+                        )
+                    }
+                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    try {
+                        alarmManager.setExactAndAllowWhileIdle(
+                            AlarmManager.RTC_WAKEUP,
+                            triggerAtMillis,
+                            pendingIntent,
+                        )
+                    } catch (e: SecurityException) {
+                        alarmManager.setAndAllowWhileIdle(
+                            AlarmManager.RTC_WAKEUP,
+                            triggerAtMillis,
+                            pendingIntent,
+                        )
+                    }
                 } else {
                     alarmManager.set(
-                        AlarmManager.RTC,
+                        AlarmManager.RTC_WAKEUP,
                         triggerAtMillis,
                         pendingIntent,
                     )
@@ -103,7 +147,7 @@ class WallpaperCheckAlarmReceiver : BroadcastReceiver() {
         }
 
         /**
-         * Cancela o agendamento de troca diária quando a opção é desativada, evitando qualquer despertar desnecessário.
+         * Cancels daily change alarm when disabled.
          */
         fun cancelDailyChange(context: Context) {
             runCatching {

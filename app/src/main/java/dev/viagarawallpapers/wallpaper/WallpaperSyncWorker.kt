@@ -26,8 +26,19 @@ class WallpaperSyncWorker(
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {
             val prefs = Prefs(applicationContext)
-            val isEnabled = prefs.wallpaperNotificationsEnabled.first()
-            if (!isEnabled) {
+            val isNotifEnabled = prefs.wallpaperNotificationsEnabled.first()
+            val isDailyEnabled = prefs.autoDailyWallpaperEnabled.first()
+
+            if (!isNotifEnabled && !isDailyEnabled) {
+                return@withContext Result.success()
+            }
+
+            // If daily wallpaper is active, prefetch candidate for tomorrow while connected and battery is healthy
+            if (isDailyEnabled) {
+                DailyWallpaperManager.prefetchNextWallpaper(applicationContext)
+            }
+
+            if (!isNotifEnabled) {
                 return@withContext Result.success()
             }
 

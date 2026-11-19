@@ -60,11 +60,11 @@ PREFERRED_MODELS = [
     "gemini-flash-latest",
 ]
 
-PROMPT = """Você é um especialista em classificação e catalogação visual de papéis de parede mobile para o aplicativo Android Wallpapers FOSS.
+PROMPT = """Você é um especialista em classificação, catalogação visual e curadoria de papéis de parede mobile para o aplicativo Android Wallpapers FOSS.
 Analise detalhadamente a imagem fornecida e retorne APENAS um JSON válido no seguinte formato:
 
 {
-  "name": "Nome descritivo preciso do que aparece na imagem (ex: 'Goku Super Saiyajin', 'Porsche 911 GT3 RS', 'Pôr do Sol na Praia', 'Cyberpunk Neon City', 'Nebulosa de Órion')",
+  "name": "Nome descritivo preciso do que aparece na imagem SEMPRE EM PORTUGUÊS (ex: 'Goku Super Saiyajin', 'Porsche 911 GT3 RS na Garagem', 'Pôr do Sol na Praia', 'Cidade Futurista Cyberpunk', 'Nebulosa de Órion')",
   "category": "Uma das opções exatas: anime, games, nature, space, cars, city, animals, oled, minimal, abstract, cyberpunk, fantasy",
   "primary_color": "#HEX (cor dominante e marcante da imagem)",
   "tags": [
@@ -76,11 +76,68 @@ Analise detalhadamente a imagem fornecida e retorne APENAS um JSON válido no se
 }
 
 Regras obrigatórias:
-1. Se a imagem contiver um personagem famoso de anime, mangá, quadrinho, filme ou jogo, identifique o personagem pelo nome exato no campo 'name' e adicione o anime/jogo nos search_terms e tags.
-2. Se a imagem for predominantemente preta ou escura com alto contraste (ótima para telas AMOLED), inclua 'oled' e 'dark' nas tags e defina a categoria como 'oled' se não for anime/games/cars.
-3. Seja detalhista nos search_terms para busca no launcher (ex: montanha, céu azul, neve, pico, nuvens, natureza, mountain, blue sky, clouds).
-4. Responda SOMENTE o bloco JSON puro, sem formatação markdown ```json ou texto explicativo antes/depois.
+1. IDIOMA DO TÍTULO ('name') - OBRIGATÓRIO EM PORTUGUÊS DO BRASIL:
+   - O campo 'name' (título do papel de parede) DEVE SEMPRE estar em português do Brasil.
+   - NUNCA crie nem mantenha títulos em inglês como 'Dark Mountain at Night', 'Race Car', 'Breaking Wall', 'Girl in the Rain', 'Shadow Monarch', 'Cat in the Forest', 'Neon Waves', 'Dispersion Art', 'Fallen Angel with Sword', etc.
+   - Sempre utilize o equivalente natural em português: 'Montanha Escura à Noite', 'Carro de Corrida', 'Quebrando a Parede', 'Garota na Chuva', 'Monarca das Sombras', 'Gato na Floresta', 'Ondas Neon', 'Arte de Dispersão', 'Anjo Caído com Espada'.
+   - EXCEÇÃO ESTRITA PARA TERMOS ESPECÍFICOS EM INGLÊS: Mantenha palavras ou expressões em inglês SOMENTE quando forem termos específicos usados e adotados naturalmente no dia a dia no Brasil para a imagem em questão (estrangeirismos consagrados), como:
+     * Conceitos e estilos: 'fast food', 'cyberpunk', 'pixel art', 'vaporwave', 'synthwave', 'setup', 'drift', 'lo-fi', 'streetwear', 'gaming', 'cosplay', 'render'.
+     * Nomes próprios oficiais de marcas, modelos e personagens já consagrados internacionalmente pelo nome original: 'Porsche 911 GT3 RS', 'Mustang Shelby GT500', 'Spider-Man', 'Batman', 'Goku', 'Darth Vader', 'Iron Man'. Mesmo com nomes próprios, qualquer descrição ao redor deve estar em português (ex: 'Batman na Chuva', 'Porsche 911 GT3 RS na Estrada').
+     * Personagens que possuem nomes brasileiros tradicionais consagrados no Brasil devem usar a versão brasileira (ex: 'Pernalonga' em vez de Bugs Bunny, 'Gaguinho' em vez de Porky Pig, 'Motoqueiro Fantasma' em vez de Ghost Rider).
+2. Se a imagem contiver um personagem famoso de anime, mangá, quadrinho, filme ou jogo, identifique o personagem pelo nome exato no campo 'name' e adicione o anime/jogo nos search_terms e tags.
+3. Se a imagem for predominantemente preta ou escura com alto contraste (ótima para telas AMOLED), inclua 'oled' e 'dark' nas tags e defina a categoria como 'oled' se não for anime/games/cars.
+4. Seja detalhista nos search_terms para busca no launcher (ex: montanha, céu azul, neve, pico, nuvens, natureza, mountain, blue sky, clouds).
+5. Se for fornecido um título atual cadastrado no catálogo e ele contiver partes em inglês que não sejam as exceções acima, TRADUZA-O e adapte-o para o português com base na imagem.
+6. Responda SOMENTE o bloco JSON puro, sem formatação markdown ```json ou texto explicativo antes/depois.
 """
+
+# English terms that should be translated into Portuguese when present in wallpaper titles
+ENGLISH_WORDS_TO_TRANSLATE = {
+    "wall", "breaking", "through", "race", "car", "sports", "dark", "light",
+    "black", "blue", "red", "white", "yellow", "green", "purple", "pink", "orange",
+    "art", "dispersion", "ink", "girl", "boy", "warrior", "knight", "sword",
+    "throne", "monarch", "shadow", "cemetery", "motorcycle", "bike", "building",
+    "silhouette", "sunset", "sunrise", "mountain", "mountains", "forest", "tree", "trees",
+    "flower", "flowers", "rain", "rainy", "ocean", "sea", "river", "lake", "sky",
+    "clouds", "cloud", "stars", "star", "space", "astronaut", "planet", "smoke", "fire",
+    "water", "ice", "snow", "snowy", "eyes", "eye", "face", "skull", "castle",
+    "grid", "hexagon", "waves", "wave", "circles", "circle", "spheres", "sphere",
+    "saiyan", "titan", "monochrome", "legendary", "vintage", "golden", "aesthetic",
+    "city", "street", "night", "moon", "sun", "abstract", "cat", "dog", "lion", "tiger",
+    "bear", "wolf", "eagle", "dragon", "death", "life", "hero", "villain", "retro",
+    "studio", "custom", "classic", "battle", "legend", "road", "alone", "lonely",
+    "hoodie", "mask", "neon blue", "neon red", "neon green", "neon yellow",
+    "blade", "flame", "flames", "darkness", "ghost", "rider", "bunny", "pig", "martian",
+    "coyote", "realistic", "drawing", "painting", "view", "nature", "leaves", "leaf"
+}
+
+# English loanwords, acronyms, or proper names widely adopted in Brazil without translation
+ACCEPTED_LOANWORDS = {
+    "fast food", "cyberpunk", "pixel art", "vaporwave", "synthwave", "lo-fi", "lofi",
+    "setup", "drift", "cosplay", "streetwear", "gamer", "gaming", "render",
+    "oled", "amoled", "led", "hd", "4k", "3d", "gt", "rs", "gt3", "shelby", "v8", "v12",
+    "spider-man", "batman", "iron man", "superman", "x-men", "deadpool", "wolverine"
+}
+
+
+def is_english_title(title: str) -> bool:
+    """Detect if title likely contains English words that should be translated to Portuguese."""
+    if not title:
+        return False
+    t_lower = title.lower().strip()
+    if t_lower.startswith("wallpaper #") or t_lower.startswith("live wallpaper #") or t_lower.startswith("papel de parede #"):
+        return False
+
+    # Mask accepted loanwords first so they do not trigger translation
+    for loanword in ACCEPTED_LOANWORDS:
+        if loanword in t_lower:
+            t_lower = t_lower.replace(loanword, " ")
+
+    tokens = re.findall(r"[a-zA-Z]+", t_lower)
+    for tok in tokens:
+        if tok in ENGLISH_WORDS_TO_TRANSLATE:
+            return True
+    return False
 
 _ACTIVE_MODEL_INDEX = 0
 _CANDIDATE_MODELS: Optional[List[str]] = None
@@ -205,18 +262,31 @@ def fetch_image_bytes(item: Dict[str, Any]) -> Optional[bytes]:
     return None
 
 
-def analyze_image_with_gemini(image_bytes: bytes, api_key: str, max_retries: int = 2) -> Optional[Dict[str, Any]]:
+def analyze_image_with_gemini(
+    image_bytes: bytes,
+    api_key: str,
+    current_title: Optional[str] = None,
+    max_retries: int = 2
+) -> Optional[Dict[str, Any]]:
     """Call Google Gemini Flash with automatic model fallback and rate limiting backoff."""
     global _ACTIVE_MODEL_INDEX
     candidates = get_candidate_models(api_key)
 
     b64_img, mime_type = prepare_image(image_bytes)
 
+    prompt_text = PROMPT
+    if current_title and current_title.strip():
+        prompt_text += (
+            f"\n\nTítulo atual cadastrado deste wallpaper: \"{current_title.strip()}\".\n"
+            f"Se este título contiver palavras em inglês (exceto termos aceitos no Brasil como 'fast food', marcas, modelos ou nomes próprios), "
+            f"TRADUZA-O e adapte-o para o português do Brasil no campo 'name'."
+        )
+
     payload = {
         "contents": [
             {
                 "parts": [
-                    {"text": PROMPT},
+                    {"text": prompt_text},
                     {
                         "inline_data": {
                             "mime_type": mime_type,
@@ -281,6 +351,48 @@ def analyze_image_with_gemini(image_bytes: bytes, api_key: str, max_retries: int
         else:
             # If all retries for this model failed on non-404, try next candidate
             _ACTIVE_MODEL_INDEX += 1
+
+    return None
+
+
+def translate_title_with_gemini(title: str, api_key: str) -> Optional[str]:
+    """Translate an English wallpaper title to Brazilian Portuguese using Gemini text API."""
+    if not title or not api_key:
+        return None
+
+    prompt = f"""Você é um especialista em localização e tradução para português do Brasil do aplicativo Wallpapers FOSS.
+Traduza o seguinte título de papel de parede para português do Brasil:
+"{title}"
+
+Regras obrigatórias:
+1. Retorne APENAS o título traduzido em português, sem aspas, explicações ou pontuações extras.
+2. Mantenha em inglês SOMENTE palavras específicas comumente usadas no Brasil sem tradução (estrangeirismos consagrados como 'fast food', 'cyberpunk', 'pixel art', 'setup', 'drift', 'vaporwave') ou nomes próprios de marcas, modelos e personagens consagrados (ex: 'Porsche 911 GT3 RS', 'Spider-Man', 'Batman', 'Goku').
+3. Termos como 'Race Car', 'Breaking Wall', 'Shadow Monarch', 'Throne', 'Dark', 'Art', 'Dispersion', 'Night', 'City', 'Knight', 'Warrior', etc. DEVEM ser traduzidos para o português ('Carro de Corrida', 'Quebrando a Parede', 'Monarca das Sombras', 'Trono', 'Sombrio'/'Escuro', 'Arte', 'Dispersão', 'Noite', 'Cidade', 'Cavaleiro', 'Guerreiro').
+4. Nomes de personagens com versões consagradas no Brasil devem usar o nome brasileiro (ex: 'Ghost Rider' -> 'Motoqueiro Fantasma', 'Bugs Bunny' -> 'Pernalonga', 'Porky Pig' -> 'Gaguinho')."""
+
+    candidates = get_candidate_models(api_key)
+    for model_name in candidates:
+        try:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+            payload = {
+                "contents": [{"parts": [{"text": prompt}]}],
+                "generationConfig": {"temperature": 0.1},
+            }
+            req = urllib.request.Request(
+                url,
+                data=json.dumps(payload).encode("utf-8"),
+                headers={"Content-Type": "application/json", "User-Agent": "ViagaraClassifier/2.0"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=12) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
+                if text:
+                    clean_text = text.strip('"\' \n\r')
+                    return clean_text
+        except Exception as e:
+            print(f"[Gemini Translate] Model {model_name} failed: {e}")
+            continue
 
     return None
 
@@ -416,10 +528,17 @@ def should_skip_classification(item: Dict[str, Any]) -> bool:
     if item.get("classified_by") == "manual" or item.get("custom_classified") is True:
         return True
 
-    # If already classified by Gemini and has real name
     name = item.get("name", "")
-    is_generic = name.startswith("Wallpaper #") or name.startswith("Live Wallpaper #")
+    is_generic = (
+        name.startswith("Wallpaper #")
+        or name.startswith("Live Wallpaper #")
+        or name.startswith("Papel de Parede #")
+    )
     is_generic_cat = item.get("category", "") in ("images", "unknown", "")
+
+    # Items with English titles should never be skipped: they must be curated to Portuguese
+    if is_english_title(name):
+        return False
 
     if item.get("classified_by") == "gemini" and not is_generic and not is_generic_cat:
         return True
@@ -460,24 +579,62 @@ def main():
     consecutive_failures = 0
     total = len(wallpapers)
 
-    # Filter unclassified candidates
-    candidates = [w for w in wallpapers if not should_skip_classification(w)]
-    print(f"Wallpapers needing classification: {len(candidates)} (batch limit: {MAX_PER_RUN})")
+    # Sort candidates by priority:
+    # 0: Unclassified or generic items (new drops from sync_telegram or issues)
+    # 1: Existing items with English titles needing translation & curation
+    # 2: Simple AI items to be upgraded
+    # 3: Remaining items
+    def get_candidate_priority(item: Dict[str, Any]) -> int:
+        name = item.get("name", "")
+        cat = item.get("category", "")
+        cb = item.get("classified_by")
+        if (
+            cb is None
+            or cb == ""
+            or name.startswith("Wallpaper #")
+            or name.startswith("Live Wallpaper #")
+            or name.startswith("Papel de Parede #")
+            or cat in ("images", "unknown", "")
+        ):
+            return 0
+        if is_english_title(name):
+            return 1
+        if cb == "simple_ai":
+            return 2
+        return 3
+
+    unfiltered_candidates = [w for w in wallpapers if not should_skip_classification(w)]
+    candidates = sorted(unfiltered_candidates, key=get_candidate_priority)
+    print(f"Wallpapers needing classification/curation: {len(candidates)} (batch limit: {MAX_PER_RUN})")
 
     if not candidates:
-        print("All wallpapers are already well-classified. Nothing to do!")
+        print("All wallpapers are already well-classified and curated in Portuguese. Nothing to do!")
         return
 
     for idx, item in enumerate(candidates[:MAX_PER_RUN]):
         item_id = item["id"]
         image_bytes = fetch_image_bytes(item)
         if not image_bytes:
+            # If thumbnail cannot be downloaded but title is in English, translate title via text API fallback
+            if is_english_title(item.get("name", "")):
+                translated = translate_title_with_gemini(item["name"], GEMINI_API_KEY)
+                if translated and translated != item["name"]:
+                    print(f"[{updated_count+1}/{MAX_PER_RUN}] Translated English title via text API: '{item['name']}' -> '{translated}'")
+                    item["name"] = translated
+                    updated_count += 1
+                    updated_items.append(item)
+                    catalog["wallpapers"] = wallpapers
+                    with open(CATALOG_PATH, "w", encoding="utf-8") as f:
+                        json.dump(catalog, f, indent=2, ensure_ascii=False)
+                        f.write("\n")
+                    time.sleep(1.0)
+                    continue
             print(f" -> Skipping {item_id}: could not load image bytes.")
             continue
 
         active_model = get_candidate_models(GEMINI_API_KEY)[min(_ACTIVE_MODEL_INDEX, len(get_candidate_models(GEMINI_API_KEY)) - 1)]
-        print(f"[{updated_count+1}/{MAX_PER_RUN}] Classifying {item_id} with Gemini ({active_model})...")
-        result = analyze_image_with_gemini(image_bytes, GEMINI_API_KEY)
+        print(f"[{updated_count+1}/{MAX_PER_RUN}] Classifying/Curating {item_id} with Gemini ({active_model})...")
+        result = analyze_image_with_gemini(image_bytes, GEMINI_API_KEY, current_title=item.get("name"))
 
         if result:
             name = result.get("name", item["name"]).strip()
@@ -520,6 +677,21 @@ def main():
             consecutive_failures = 0
             time.sleep(3.5)
         else:
+            # Fallback: if multimodal analysis failed but item has English title, try text translation
+            if is_english_title(item.get("name", "")):
+                translated = translate_title_with_gemini(item["name"], GEMINI_API_KEY)
+                if translated and translated != item["name"]:
+                    print(f" -> Text fallback translated title: '{item['name']}' -> '{translated}'")
+                    item["name"] = translated
+                    updated_count += 1
+                    updated_items.append(item)
+                    catalog["wallpapers"] = wallpapers
+                    with open(CATALOG_PATH, "w", encoding="utf-8") as f:
+                        json.dump(catalog, f, indent=2, ensure_ascii=False)
+                        f.write("\n")
+                    time.sleep(1.0)
+                    continue
+
             print(f" -> Skipping {item_id} due to API error.")
             consecutive_failures += 1
             if consecutive_failures >= 3:

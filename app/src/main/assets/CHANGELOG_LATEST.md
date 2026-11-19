@@ -1,3 +1,3 @@
-### 🌌 Wallpapers FOSS v1.4.0
+### 🌌 Wallpapers FOSS v1.5.0
 
-- **Legibilidade do Balão de Atualização:** Reduzida a transparência e adicionada elevação com sombra suave para melhor contraste e nitidez sobre os wallpapers.
+- **Troca Diária Inteligente:** Pré-download otimizado durante o dia via WorkManager e aplicação instantânea à meia-noite sem gastar bateria ou dados extras.
