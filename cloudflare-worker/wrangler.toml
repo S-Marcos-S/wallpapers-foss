@@ -1,0 +1,10 @@
+name = "wallpapers-foss-cdn"
+main = "worker.js"
+compatibility_date = "2024-04-01"
+
+# Workers free tier covers 100,000 requests per day
+workers_dev = true
+
+# Environment variables & secrets:
+# BOT_TOKEN must be configured as a secret:
+# npx wrangler secret put BOT_TOKEN

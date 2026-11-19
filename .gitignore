@@ -24,6 +24,10 @@ build-*.sh
 GEMINI.md
 gemini.md
 
+# Media files — full resolution files are served via CDN/Telegram, never stored in Git
+wallpapers/full/
+wallpapers/staging/
+
 # IDE
 .idea/
 *.iml

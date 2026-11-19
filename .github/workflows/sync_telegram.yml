@@ -58,6 +58,7 @@ jobs:
           TELEGRAM_STRING_SESSION: ${{ secrets.TELEGRAM_STRING_SESSION }}
           FALLBACK_BACKFILL_COUNT: ${{ inputs.fallback_count || '15' }}
           ENABLE_FALLBACK_BACKFILL: ${{ inputs.enable_fallback != false }}
+          WALLPAPERS_CDN_URL: ${{ secrets.WALLPAPERS_CDN_URL }}
         run: |
           python scripts/sync_telegram.py
 
@@ -73,9 +74,12 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          if [ -n "$(git status --porcelain wallpapers/)" ]; then
-            git add wallpapers/
-            git commit -m "chore(wallpapers): auto-sync wallpapers from Telegram [skip ci]"
+          # Remove any full-res media files to keep Git repo lightweight (served via CDN/Telegram)
+          rm -rf wallpapers/full/* wallpapers/staging/* 2>/dev/null || true
+
+          if [ -n "$(git status --porcelain wallpapers/thumbnails/ wallpapers/catalog.json wallpapers/notification.json)" ]; then
+            git add wallpapers/thumbnails/ wallpapers/catalog.json wallpapers/notification.json
+            git commit -m "chore(wallpapers): auto-sync curated wallpapers [skip ci]"
             git pull --rebase origin main
             git push origin main
             echo "Successfully updated wallpapers catalog."

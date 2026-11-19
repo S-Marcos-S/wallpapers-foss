@@ -288,6 +288,14 @@ async def process_media_message(
                         os.remove(thumb_path)
                     return None
 
+    # Delete temporary full-resolution file from runner disk to avoid committing heavy media to Git
+    if os.environ.get("KEEP_LOCAL_FULL_MEDIA", "false").lower() not in ("true", "1"):
+        try:
+            if os.path.exists(full_path):
+                os.remove(full_path)
+        except Exception as e:
+            print(f"Notice: could not delete temporary full file {full_path}: {e}")
+
     # Extract title from message text or caption if available
     title = ""
     if msg.text:
@@ -303,13 +311,19 @@ async def process_media_message(
     if not title:
         title = f"Live Wallpaper #{msg.id}" if media_type == "video" else f"Papel de Parede #{msg.id}"
 
+    cdn_base_url = os.environ.get("WALLPAPERS_CDN_URL", "").rstrip("/")
+    if cdn_base_url:
+        full_url = f"{cdn_base_url}/raw/full/{full_filename}"
+    else:
+        full_url = f"{RAW_BASE_URL}/full/{full_filename}"
+
     new_entry = {
         "id": item_id,
         "name": title,
         "author": "Wallpaper HD/4K (Amanda)",
         "author_url": "https://t.me/amandinhawallpaper",
         "thumbnail_url": f"{RAW_BASE_URL}/thumbnails/{thumb_filename}",
-        "full_url": f"{RAW_BASE_URL}/full/{full_filename}",
+        "full_url": full_url,
         "primary_color": "#121212",
         "category": "live" if media_type == "video" else "images",
         "type": media_type,
