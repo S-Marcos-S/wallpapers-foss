@@ -208,6 +208,9 @@ object DailyWallpaperManager {
                 advanceToNextWallpaper(context, isUserDislike = false)
             } else if (lastTimestamp <= 0L) {
                 prefs.setDailyWallpaperLastTimestamp(now)
+                prefetchNextWallpaper(context)
+            } else {
+                prefetchNextWallpaper(context)
             }
         }
     }
@@ -224,8 +227,13 @@ object DailyWallpaperManager {
                 _currentWallpaperId.value = currentId
             }
             WallpaperCheckAlarmReceiver.scheduleDailyChange(context)
+            WallpaperSyncWorker.schedule(context)
+            prefetchNextWallpaper(context)
         } else {
             WallpaperCheckAlarmReceiver.cancelDailyChange(context)
+            if (!prefs.wallpaperNotificationsEnabled.first()) {
+                WallpaperSyncWorker.cancel(context)
+            }
         }
     }
 
@@ -344,6 +352,7 @@ object DailyWallpaperManager {
                     prefs.setDailyWallpaperLastTimestamp(System.currentTimeMillis())
                     recordCurrentWallpaperIds(context)
                     applySuccess = true
+                    prefetchNextWallpaper(context)
                 } else {
                     targetIndex = (targetIndex + 1) % eligible.size
                     attempts++
@@ -354,6 +363,38 @@ object DailyWallpaperManager {
             _isChangingWallpaper.value = false
             advanceMutex.unlock()
         }
+    }
+
+    /**
+     * Pre-downloads the candidate wallpaper for the next scheduled rotation into local disk cache.
+     * This avoids network usage and high latency during midnight execution, saving battery.
+     */
+    suspend fun prefetchNextWallpaper(context: Context): Boolean = withContext(Dispatchers.IO) {
+        runCatching {
+            val prefs = Prefs(context)
+            val isEnabled = prefs.autoDailyWallpaperEnabled.first()
+            if (!isEnabled) return@withContext false
+
+            val catalog = WallpaperRepository.loadCatalog(context)
+            val staticWallpapers = catalog.wallpapers.filter { !it.isLive && it.type != "video" }
+                .ifEmpty { catalog.wallpapers }
+            if (staticWallpapers.isEmpty()) return@withContext false
+
+            val dislikedIds = WallpaperRepository.getDislikedIds(context)
+            val currentId = _currentWallpaperId.value.ifBlank { prefs.dailyWallpaperCurrentId.first() }.trim()
+            val savedIndex = prefs.dailyWallpaperIndex.first()
+
+            val candidateItem = selectNextWallpaper(
+                allStatic = staticWallpapers,
+                dislikedIds = dislikedIds,
+                currentId = currentId,
+                savedIndex = savedIndex,
+                isUserDislike = false,
+            ) ?: staticWallpapers.firstOrNull { it.id !in dislikedIds } ?: return@withContext false
+
+            val file = WallpaperRepository.getCachedOrDownloadFile(context, candidateItem.fullUrl)
+            file != null && file.exists() && file.length() > 0
+        }.getOrDefault(false)
     }
 
     suspend fun handleLike(context: Context): Boolean = withContext(Dispatchers.IO) {
