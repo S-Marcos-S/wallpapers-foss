@@ -44,7 +44,7 @@ THUMB_DIR = os.path.join(WALLPAPERS_DIR, "thumbnails")
 CATALOG_PATH = os.path.join(WALLPAPERS_DIR, "catalog.json")
 SUMMARY_PATH = os.path.join(BASE_DIR, "issue_summary.md")
 
-RAW_BASE_URL = "https://raw.githubusercontent.com/S-Marcos-S/viagara-wallpapers/main/wallpapers"
+RAW_BASE_URL = "https://raw.githubusercontent.com/S-Marcos-S/wallpapers-foss/main/wallpapers"
 
 os.makedirs(FULL_DIR, exist_ok=True)
 os.makedirs(THUMB_DIR, exist_ok=True)

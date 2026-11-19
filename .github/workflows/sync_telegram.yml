@@ -82,8 +82,8 @@ jobs:
           # Clean up any staging temporary directory
           rm -rf wallpapers/staging 2>/dev/null || true
 
-          if [ -n "$(git status --porcelain README.md wallpapers/thumbnails/ wallpapers/catalog.json wallpapers/notification.json)" ]; then
-            git add README.md wallpapers/thumbnails/ wallpapers/catalog.json wallpapers/notification.json
+          if [ -n "$(git status --porcelain README.md wallpapers/full/ wallpapers/thumbnails/ wallpapers/catalog.json wallpapers/notification.json)" ]; then
+            git add README.md wallpapers/full/ wallpapers/thumbnails/ wallpapers/catalog.json wallpapers/notification.json
             git commit -m "chore(wallpapers): auto-sync curated wallpapers and update README stats [skip ci]"
             # Ensure working tree is clean of any unstaged noise before rebase
             git checkout -- . 2>/dev/null || git restore . 2>/dev/null || true

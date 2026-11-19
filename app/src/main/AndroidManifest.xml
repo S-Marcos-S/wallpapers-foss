@@ -24,6 +24,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:theme="@style/Theme.ViagaraWallpapers"
         android:supportsRtl="true"
+        android:enableOnBackInvokedCallback="true"
         android:largeHeap="true">
 
         <activity

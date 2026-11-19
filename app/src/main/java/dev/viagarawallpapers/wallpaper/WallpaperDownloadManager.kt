@@ -16,6 +16,7 @@ import android.os.Environment
 import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
+import android.util.Log
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
@@ -288,6 +289,7 @@ object WallpaperDownloadManager {
         activeCount: Int,
     ): Uri? = withContext(Dispatchers.IO) {
         val cachedFile = WallpaperRepository.getCachedFile(context, item.fullUrl)
+            ?: WallpaperRepository.getCachedFile(context, item.thumbnailUrl)
         val isVideo = item.isLive || item.type == "video" || item.fullUrl.endsWith(".mp4", ignoreCase = true)
         val ext = getExtension(item.fullUrl, isVideo)
         val mimeType = getMimeType(item)
@@ -325,69 +327,120 @@ object WallpaperDownloadManager {
                 )
             }
         } else {
-            // Download from HTTP fullUrl
-            var currentUrl = item.fullUrl
-            var conn: HttpURLConnection? = null
-            var redirects = 0
-            while (redirects < 6) {
-                if (isCancelled.get()) throw CancellationException("Download cancelled")
-                val connection = (URL(currentUrl).openConnection() as HttpURLConnection).apply {
-                    connectTimeout = 15000
-                    readTimeout = 30000
-                    instanceFollowRedirects = false
-                    setRequestProperty("User-Agent", "Mozilla/5.0 WallpapersFOSS/${BuildConfig.VERSION_NAME}")
-                    setRequestProperty("Accept", "*/*")
-                }
-                val code = connection.responseCode
-                if (code in 300..399) {
-                    val loc = connection.getHeaderField("Location")
-                    connection.disconnect()
-                    if (!loc.isNullOrBlank()) {
-                        currentUrl = loc
-                        redirects++
-                        continue
-                    }
-                }
-                conn = connection
-                break
+            // Attempt download from item.fullUrl; if HTTP 404 or fails, fallback to item.thumbnailUrl
+            var lastError: Exception? = null
+            var finalUri: Uri? = null
+
+            val urlsToTry = if (item.thumbnailUrl.isNotBlank() && item.thumbnailUrl != item.fullUrl && !isVideo) {
+                listOf(item.fullUrl, item.thumbnailUrl)
+            } else {
+                listOf(item.fullUrl)
             }
 
-            if (conn == null || conn.responseCode != 200) {
-                throw IllegalStateException("Server returned HTTP ${conn?.responseCode}")
-            }
+            for ((idx, downloadUrl) in urlsToTry.withIndex()) {
+                val isFallback = idx > 0
+                val targetExt = if (isFallback) getExtension(downloadUrl, false) else ext
+                val targetMime = if (isFallback) "image/webp" else mimeType
+                val targetFileName = "${cleanName}_${item.id}.$targetExt"
 
-            activeConnection = conn
-            val totalBytes = conn.contentLengthLong.takeIf { it > 0 } ?: 0L
-
-            val cacheDir = File(context.cacheDir, "wallpaper_cache").apply { if (!exists()) mkdirs() }
-            val hash = urlHash(item.fullUrl)
-            val cacheTarget = File(cacheDir, hash)
-            val cacheTemp = File(cacheDir, "$hash.tmp")
-
-            val uri = try {
-                conn.inputStream.use { input ->
-                    saveStreamToStorageAndCache(
+                try {
+                    finalUri = downloadFromUrl(
                         context = context,
-                        input = input,
-                        totalBytes = totalBytes,
-                        fileName = fileName,
-                        mimeType = mimeType,
-                        isVideo = isVideo,
-                        cacheTempFile = cacheTemp,
+                        downloadUrl = downloadUrl,
+                        originalFullUrl = item.fullUrl,
+                        fileName = targetFileName,
+                        mimeType = targetMime,
+                        isVideo = isVideo && !isFallback,
                         onProgress = onProgress
                     )
+                    if (finalUri != null) {
+                        break
+                    }
+                } catch (e: Exception) {
+                    lastError = e
+                    Log.w("WallpaperDownloadManager", "Download failed for $downloadUrl: ${e.message}")
                 }
-            } finally {
-                activeConnection = null
-                conn.disconnect()
             }
 
-            if (cacheTemp.exists() && cacheTemp.length() > 0) {
-                cacheTemp.renameTo(cacheTarget)
+            if (finalUri == null) {
+                throw lastError ?: IllegalStateException("Failed to download wallpaper")
             }
-
-            uri
+            finalUri
         }
+    }
+
+    private fun downloadFromUrl(
+        context: Context,
+        downloadUrl: String,
+        originalFullUrl: String,
+        fileName: String,
+        mimeType: String,
+        isVideo: Boolean,
+        onProgress: (Int) -> Unit,
+    ): Uri? {
+        var currentUrl = downloadUrl
+        var conn: HttpURLConnection? = null
+        var redirects = 0
+        while (redirects < 6) {
+            if (isCancelled.get()) throw CancellationException("Download cancelled")
+            val connection = (URL(currentUrl).openConnection() as HttpURLConnection).apply {
+                connectTimeout = 15000
+                readTimeout = 30000
+                instanceFollowRedirects = false
+                setRequestProperty("User-Agent", "Mozilla/5.0 WallpapersFOSS/${BuildConfig.VERSION_NAME}")
+                setRequestProperty("Accept", "*/*")
+            }
+            val code = connection.responseCode
+            if (code in 300..399) {
+                val loc = connection.getHeaderField("Location")
+                connection.disconnect()
+                if (!loc.isNullOrBlank()) {
+                    currentUrl = loc
+                    redirects++
+                    continue
+                }
+            }
+            conn = connection
+            break
+        }
+
+        if (conn == null || conn.responseCode != 200) {
+            val code = conn?.responseCode
+            conn?.disconnect()
+            throw IllegalStateException("Server returned HTTP $code")
+        }
+
+        activeConnection = conn
+        val totalBytes = conn.contentLengthLong.takeIf { it > 0 } ?: 0L
+
+        val cacheDir = File(context.cacheDir, "wallpaper_cache").apply { if (!exists()) mkdirs() }
+        val hash = urlHash(originalFullUrl)
+        val cacheTarget = File(cacheDir, hash)
+        val cacheTemp = File(cacheDir, "$hash.tmp")
+
+        val uri = try {
+            conn.inputStream.use { input ->
+                saveStreamToStorageAndCache(
+                    context = context,
+                    input = input,
+                    totalBytes = totalBytes,
+                    fileName = fileName,
+                    mimeType = mimeType,
+                    isVideo = isVideo,
+                    cacheTempFile = cacheTemp,
+                    onProgress = onProgress
+                )
+            }
+        } finally {
+            activeConnection = null
+            conn.disconnect()
+        }
+
+        if (cacheTemp.exists() && cacheTemp.length() > 0) {
+            cacheTemp.renameTo(cacheTarget)
+        }
+
+        return uri
     }
 
     private fun saveStreamToStorage(

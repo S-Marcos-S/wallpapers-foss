@@ -59,7 +59,7 @@ FULL_DIR = os.path.join(WALLPAPERS_DIR, "full")
 THUMB_DIR = os.path.join(WALLPAPERS_DIR, "thumbnails")
 CATALOG_PATH = os.path.join(WALLPAPERS_DIR, "catalog.json")
 
-RAW_BASE_URL = "https://raw.githubusercontent.com/S-Marcos-S/viagara-wallpapers/main/wallpapers"
+RAW_BASE_URL = "https://raw.githubusercontent.com/S-Marcos-S/wallpapers-foss/main/wallpapers"
 
 os.makedirs(FULL_DIR, exist_ok=True)
 os.makedirs(THUMB_DIR, exist_ok=True)
@@ -294,8 +294,9 @@ async def process_media_message(
                         os.remove(thumb_path)
                     return None
 
-    # Delete temporary full-resolution file from runner disk to avoid committing heavy media to Git
-    if os.environ.get("KEEP_LOCAL_FULL_MEDIA", "false").lower() not in ("true", "1"):
+    # Only delete local full file if an external CDN is configured to host the files
+    cdn_base_url = os.environ.get("WALLPAPERS_CDN_URL", "").rstrip("/")
+    if cdn_base_url:
         try:
             if os.path.exists(full_path):
                 os.remove(full_path)

@@ -1,5 +1,5 @@
-### 🌌 Wallpapers FOSS v1.5.0
+### 🌌 Wallpapers FOSS v1.5.1-beta
 
-- **Seleção Múltipla & Download em Lote:** Selecione vários papéis de parede com toque longo e baixe todos de uma vez.
-- **Botão Cancelar na Notificação:** Cancele o download a qualquer momento direto pela notificação.
-- **Transição Fluida na Barra Superior:** Animações suaves ao alternar para o modo de seleção.
+- **Correção no Carregamento e Download:** Adicionado fallback resiliente para miniatura de alta definição quando a imagem completa falhar.
+- **Suporte a Redirecionamentos HTTP:** Conexões mais estáveis e confiáveis ao baixar papéis de parede.
+- **Previsão de Voltar no Android 13+:** Suporte aprimorado ao gesto de voltar do sistema operacional.

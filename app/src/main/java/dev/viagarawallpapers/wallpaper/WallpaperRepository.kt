@@ -10,8 +10,10 @@ import android.graphics.Canvas
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.os.Build
+import android.util.Log
 import android.content.Intent
 import android.net.Uri
+import dev.viagarawallpapers.BuildConfig
 import dev.viagarawallpapers.analytics.AnalyticsManager
 import dev.viagarawallpapers.util.WindowSizeUtil
 import kotlin.math.sqrt
@@ -399,24 +401,52 @@ object WallpaperRepository {
         }
 
         runCatching {
-            val conn = (URL(url).openConnection() as HttpURLConnection).apply {
-                connectTimeout = 10000
-                readTimeout = 25000
-                requestMethod = "GET"
+            var currentUrl = url
+            var conn: HttpURLConnection? = null
+            var redirects = 0
+            while (redirects < 6) {
+                val connection = (URL(currentUrl).openConnection() as HttpURLConnection).apply {
+                    connectTimeout = 12000
+                    readTimeout = 25000
+                    instanceFollowRedirects = false
+                    setRequestProperty("User-Agent", "Mozilla/5.0 WallpapersFOSS/${BuildConfig.VERSION_NAME}")
+                    setRequestProperty("Accept", "*/*")
+                }
+                val code = connection.responseCode
+                if (code in 300..399) {
+                    val loc = connection.getHeaderField("Location")
+                    connection.disconnect()
+                    if (!loc.isNullOrBlank()) {
+                        currentUrl = loc
+                        redirects++
+                        continue
+                    }
+                }
+                conn = connection
+                break
             }
-            if (conn.responseCode == 200) {
+
+            if (conn != null && conn.responseCode == 200) {
                 val tempFile = File(cacheDir(context), "${hash}.tmp")
                 conn.inputStream.use { input ->
                     FileOutputStream(tempFile).use { output ->
                         input.copyTo(output)
                     }
                 }
+                conn.disconnect()
                 if (tempFile.exists() && tempFile.length() > 0) {
                     tempFile.renameTo(file)
                     file
                 } else null
-            } else null
-        }.getOrNull()
+            } else {
+                Log.w("WallpaperRepository", "Failed to download $url, response code: ${conn?.responseCode}")
+                conn?.disconnect()
+                null
+            }
+        }.getOrElse { e ->
+            Log.e("WallpaperRepository", "Exception downloading $url: ${e.message}")
+            null
+        }
     }
 
     const val MAX_CANVAS_BITMAP_BYTES: Long = 80 * 1024 * 1024L // 80 MB (safe headroom under Canvas.MAX_BITMAP_SIZE = 100MB)
@@ -497,10 +527,17 @@ object WallpaperRepository {
     suspend fun getCachedOrDownloadBitmap(
         context: Context,
         url: String,
+        fallbackUrl: String? = null,
         reqWidth: Int = 0,
         reqHeight: Int = 0,
     ): Bitmap? = withContext(Dispatchers.IO) {
-        val file = getCachedOrDownloadFile(context, url) ?: return@withContext null
+        var file = getCachedOrDownloadFile(context, url)
+        if (file == null && !fallbackUrl.isNullOrBlank() && fallbackUrl != url) {
+            Log.w("WallpaperRepository", "Primary URL failed ($url), attempting fallback ($fallbackUrl)")
+            file = getCachedOrDownloadFile(context, fallbackUrl)
+        }
+        if (file == null) return@withContext null
+
         val (screenW, screenH) = WindowSizeUtil.getRealWindowSize(context)
         val baseW = if (screenW > 0f) screenW.toInt() else 1080
         val baseH = if (screenH > 0f) screenH.toInt() else 2400
@@ -597,7 +634,7 @@ object WallpaperRepository {
         item: WallpaperItem,
         flags: Int,
     ): Result<Unit> = withContext(Dispatchers.IO) {
-        val bitmap = getCachedOrDownloadBitmap(context, item.fullUrl)
+        val bitmap = getCachedOrDownloadBitmap(context, item.fullUrl, item.thumbnailUrl)
             ?: return@withContext Result.failure(IllegalStateException("Could not download wallpaper bitmap"))
         val framedBitmap = frameBitmapToDisplay(context, bitmap)
         val result = applyWallpaper(context, item, framedBitmap, flags)

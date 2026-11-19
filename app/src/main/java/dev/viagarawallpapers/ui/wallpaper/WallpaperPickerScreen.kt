@@ -1037,9 +1037,18 @@ private fun WallpaperPreviewOverlay(
 
     val isVideo = item.isLive || item.type == "video"
 
+    var isFullLoadFinished by remember(item.fullUrl) { mutableStateOf(false) }
+
     val fullBitmap by produceState<Bitmap?>(initialValue = null, item.fullUrl) {
         if (!isVideo) {
-            value = WallpaperRepository.getCachedOrDownloadBitmap(context, item.fullUrl)
+            value = WallpaperRepository.getCachedOrDownloadBitmap(
+                context = context,
+                url = item.fullUrl,
+                fallbackUrl = item.thumbnailUrl,
+            )
+            isFullLoadFinished = true
+        } else {
+            isFullLoadFinished = true
         }
     }
 
@@ -1234,7 +1243,7 @@ private fun WallpaperPreviewOverlay(
                             }
                         }
 
-                        if (fullBitmap == null && p >= 0.90f) {
+                        if (fullBitmap == null && !isFullLoadFinished && p >= 0.90f) {
                             Box(
                                 modifier = Modifier
                                     .align(Alignment.TopCenter)
