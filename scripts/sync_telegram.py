@@ -37,6 +37,12 @@ try:
 except ImportError:
     cv2 = None
 
+# Pre-curation using Gemini Flash
+try:
+    from classify_with_gemini import analyze_image_with_gemini
+except ImportError:
+    analyze_image_with_gemini = None
+
 API_ID = int(os.environ.get("TELEGRAM_API_ID", 0))
 API_HASH = os.environ.get("TELEGRAM_API_HASH", "")
 STRING_SESSION = os.environ.get("TELEGRAM_STRING_SESSION", "")
@@ -311,6 +317,43 @@ async def process_media_message(
     if not title:
         title = f"Live Wallpaper #{msg.id}" if media_type == "video" else f"Papel de Parede #{msg.id}"
 
+    # Gemini pre-curation: analyze thumbnail to enforce quality and Portuguese title before catalog entry
+    gemini_key = os.environ.get("GEMINI_API_KEY", "")
+    curated_name = title
+    curated_category = "live" if media_type == "video" else "images"
+    curated_color = "#121212"
+    curated_tags = ["live", "video"] if media_type == "video" else ["image", "hd", "4k"]
+    curated_search_terms = []
+    classified_by = "raw"
+
+    if gemini_key and analyze_image_with_gemini is not None:
+        try:
+            with open(thumb_path, "rb") as f:
+                thumb_bytes = f.read()
+            print(f"Curating msg #{msg.id} with Gemini Flash before catalog inclusion...")
+            curation = analyze_image_with_gemini(thumb_bytes, gemini_key, current_title=title)
+            if not curation:
+                print(f"Skipping msg #{msg.id}: rejected or failed Gemini quality curation.")
+                if os.path.exists(thumb_path):
+                    os.remove(thumb_path)
+                return None
+
+            curated_name = curation.get("name", title).strip()
+            cat = curation.get("category", "images").strip().lower()
+            curated_category = "live" if media_type == "video" else cat
+            curated_color = curation.get("primary_color", "#121212")
+            curated_tags = curation.get("tags", curated_tags)
+            curated_search_terms = curation.get("search_terms", [])
+            classified_by = "gemini"
+            print(f" -> Approved by Gemini: '{curated_name}' | Cat: {curated_category} | Cor: {curated_color}")
+        except Exception as e:
+            print(f"Notice: Gemini curation call encountered an error: {e}")
+            if os.environ.get("STRICT_GEMINI_CURATION", "true").lower() in ("true", "1"):
+                print(f"Strict curation enabled: skipping msg #{msg.id} due to curation error.")
+                if os.path.exists(thumb_path):
+                    os.remove(thumb_path)
+                return None
+
     cdn_base_url = os.environ.get("WALLPAPERS_CDN_URL", "").rstrip("/")
     if cdn_base_url:
         full_url = f"{cdn_base_url}/raw/full/{full_filename}"
@@ -319,17 +362,19 @@ async def process_media_message(
 
     new_entry = {
         "id": item_id,
-        "name": title,
+        "name": curated_name,
         "author": "Wallpaper HD/4K (Amanda)",
         "author_url": "https://t.me/amandinhawallpaper",
         "thumbnail_url": f"{RAW_BASE_URL}/thumbnails/{thumb_filename}",
         "full_url": full_url,
-        "primary_color": "#121212",
-        "category": "live" if media_type == "video" else "images",
+        "primary_color": curated_color,
+        "category": curated_category,
         "type": media_type,
         "is_live": media_type == "video",
-        "tags": ["live", "video"] if media_type == "video" else ["image", "hd", "4k"],
+        "tags": list(dict.fromkeys(curated_tags)),
+        "search_terms": curated_search_terms,
         "content_hash": content_hash,
+        "classified_by": classified_by,
     }
 
     if dhash is not None:

@@ -59,6 +59,7 @@ jobs:
           FALLBACK_BACKFILL_COUNT: ${{ inputs.fallback_count || '15' }}
           ENABLE_FALLBACK_BACKFILL: ${{ inputs.enable_fallback != false }}
           WALLPAPERS_CDN_URL: ${{ secrets.WALLPAPERS_CDN_URL }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           python scripts/sync_telegram.py
 
