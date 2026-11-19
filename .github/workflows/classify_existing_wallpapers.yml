@@ -7,12 +7,12 @@ on:
   workflow_dispatch:
     inputs:
       batch_size:
-        description: 'Quantidade de papéis de parede para classificar'
+        description: 'Number of wallpapers to classify and curate'
         required: true
         default: '50'
         type: string
       ai_classifier:
-        description: 'Classificador de Tags e Categorias'
+        description: 'Tags and categories classifier'
         required: true
         default: 'both_with_fallback'
         type: choice
@@ -21,7 +21,7 @@ on:
           - 'gemini'
           - 'simple_ai'
       upgrade_simple:
-        description: 'Aprimorar papéis de parede antigos (da Simple AI ou genéricos) com Gemini'
+        description: 'Upgrade older wallpapers (from Simple AI, generic or English titles) with Gemini'
         required: false
         default: true
         type: boolean

@@ -2,20 +2,25 @@ name: Sync Telegram Wallpapers
 
 on:
   schedule:
-    # Executa duas vezes ao dia: às 05:00 UTC (02:00 BRT - madrugada no Brasil) e às 14:00 UTC (30 min antes da análise às 14:30 UTC)
+    # Runs twice a day: at 05:00 UTC (02:00 BRT) and at 14:00 UTC (30 min before analysis at 14:30 UTC)
     - cron: '0 5,14 * * *'
-  workflow_dispatch: # Permite disparar manualmente pelo botão "Run workflow"
+  workflow_dispatch: # Allows manual trigger from Actions tab
     inputs:
       fallback_count:
-        description: 'Quantidade de papéis antigos para resgatar se não houver novos'
+        description: 'Number of older wallpapers to rescue if no new ones are found'
         required: false
         default: '15'
         type: string
       enable_fallback:
-        description: 'Ativar busca de papéis antigos se não houver novos'
+        description: 'Enable older wallpaper retrieval if no new ones are found'
         required: false
         default: true
         type: boolean
+      max_classify:
+        description: 'Maximum wallpapers to classify and curate with Gemini'
+        required: false
+        default: '30'
+        type: string
 
 permissions:
   contents: write
@@ -59,6 +64,7 @@ jobs:
       - name: Classify wallpapers with Gemini AI
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          MAX_CLASSIFY_PER_RUN: ${{ inputs.max_classify || '30' }}
         run: |
           python scripts/classify_with_gemini.py
 
