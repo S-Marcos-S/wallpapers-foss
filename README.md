@@ -41,7 +41,7 @@ Coleção de papéis de parede projetados para celulares.
 <!-- START_WALLPAPER_STATS -->
 ## Painel de Estatísticas Diárias do Repositório
 
-> **Última atualização:** 19/11/2026 às 21:15 (Horário de Brasília) (`2026-11-20 00:15 UTC`)
+> **Última atualização:** 20/11/2026 às 09:37 (Horário de Brasília) (`2026-11-20 12:37 UTC`)
 
 ### 📊 Progresso da Curadoria de Wallpapers em Alta Definição
 
@@ -57,7 +57,7 @@ Coleção de papéis de parede projetados para celulares.
 | :--- | :---: | :---: | :---: |
 | **Wallpapers em Alta Resolução (`wallpapers/full/`)** | **3.473 GB** | 3556.6 MB | 1215 |
 | **Miniaturas Otimizadas (`wallpapers/thumbnails/`)** | **0.045 GB** | 46.3 MB | 1230 |
-| **Total do Repositório** | **3.527 GB** | **3611.2 MB** | 2548 |
+| **Total do Repositório** | **3.527 GB** | **3611.2 MB** | 2547 |
 
 ### Status das Descrições e Classificação por IA
 
@@ -78,19 +78,19 @@ Coleção de papéis de parede projetados para celulares.
 
 | Categoria | Quantidade | Proporção |
 | :--- | :---: | :---: |
-| `Oled` | **283** | 23.4% |
+| `Oled` | **281** | 23.3% |
 | `Anime` | **190** | 15.7% |
 | `Abstract` | **148** | 12.3% |
-| `Nature` | **122** | 10.1% |
-| `Fantasy` | **94** | 7.8% |
+| `Nature` | **124** | 10.3% |
+| `Fantasy` | **92** | 7.6% |
 | `Cars` | **77** | 6.4% |
 | `Animals` | **75** | 6.2% |
 | `Minimal` | **66** | 5.5% |
-| `Games` | **61** | 5.1% |
+| `Games` | **62** | 5.1% |
 | `Space` | **50** | 4.1% |
 | `City` | **18** | 1.5% |
 | `Live` | **10** | 0.8% |
-| `Cyberpunk` | **7** | 0.6% |
+| `Cyberpunk` | **8** | 0.7% |
 | `Images` | **3** | 0.2% |
 | `Movies` | **2** | 0.2% |
 | `Animation` | **1** | 0.1% |
