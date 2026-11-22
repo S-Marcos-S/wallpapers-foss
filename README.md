@@ -41,14 +41,14 @@ Coleção de papéis de parede projetados para celulares.
 <!-- START_WALLPAPER_STATS -->
 ## Painel de Estatísticas Diárias do Repositório
 
-> **Última atualização:** 22/11/2026 às 10:21 (Horário de Brasília) (`2026-11-22 13:21 UTC`)
+> **Última atualização:** 22/11/2026 às 17:50 (Horário de Brasília) (`2026-11-22 20:50 UTC`)
 
 ### 📊 Progresso da Curadoria de Wallpapers em Alta Definição
 
 | Métrica | Quantidade | Detalhes |
 | :--- | :---: | :--- |
-| **Wallpapers HD no Canal Oficial** | **20454** | Origem: [`@amandinhawallpaper`](https://t.me/amandinhawallpaper) |
-| **Wallpapers Curados no Aplicativo** | **1236** | **6.0%** `█░░░░░░░░░░░░░░░░░░░` |
+| **Wallpapers HD no Canal Oficial** | **20477** | Origem: [`@amandinhawallpaper`](https://t.me/amandinhawallpaper) |
+| **Wallpapers Curados no Aplicativo** | **1259** | **6.1%** `█░░░░░░░░░░░░░░░░░░░` |
 | **Restantes para Curadoria** | **19218** | Fila de expansão e curadoria contínua |
 
 ### Armazenamento e Consumo em Disco
@@ -63,34 +63,34 @@ Coleção de papéis de parede projetados para celulares.
 
 | Método de Descrição | Quantidade | Porcentagem | Barra de Progresso |
 | :--- | :---: | :---: | :--- |
-| **IA Avançada (Google Gemini)** | **1231** | **99.6%** | `███████████████████░` |
+| **IA Avançada (Google Gemini)** | **1254** | **99.6%** | `███████████████████░` |
 | **IA Simples (MobileNetV3 / Local)** | **0** | **0.0%** | `░░░░░░░░░░░░░░░░░░░░` |
 | **Curadoria Manual (Humana)** | **5** | **0.4%** | `░░░░░░░░░░░░░░░░░░░░` |
 | **Pendentes / Sem Descrição** | **0** | **0.0%** | `░░░░░░░░░░░░░░░░░░░░` |
-| **Total Geral no Catálogo** | **1236** | **100%** | |
+| **Total Geral no Catálogo** | **1259** | **100%** | |
 
 ### Tipos de Papéis de Parede
 
-- **Imagens Estáticas (WebP / JPG):** **1226** (99.2%)
+- **Imagens Estáticas (WebP / JPG):** **1249** (99.2%)
 - **Live Wallpapers / Vídeos (MP4):** **10** (0.8%)
 
 ### Distribuição por Categorias
 
 | Categoria | Quantidade | Proporção |
 | :--- | :---: | :---: |
-| `Oled` | **294** | 23.8% |
-| `Anime` | **190** | 15.4% |
-| `Abstract` | **155** | 12.5% |
-| `Nature` | **124** | 10.0% |
-| `Fantasy` | **92** | 7.4% |
-| `Animals` | **83** | 6.7% |
-| `Cars` | **77** | 6.2% |
-| `Minimal` | **67** | 5.4% |
-| `Games` | **62** | 5.0% |
+| `Oled` | **298** | 23.7% |
+| `Anime` | **207** | 16.4% |
+| `Abstract` | **155** | 12.3% |
+| `Nature` | **125** | 9.9% |
+| `Fantasy` | **94** | 7.5% |
+| `Animals` | **83** | 6.6% |
+| `Cars` | **77** | 6.1% |
+| `Minimal` | **67** | 5.3% |
+| `Games` | **62** | 4.9% |
 | `Space` | **50** | 4.0% |
 | `City` | **17** | 1.4% |
 | `Live` | **10** | 0.8% |
-| `Cyberpunk` | **9** | 0.7% |
+| `Cyberpunk` | **8** | 0.6% |
 | `Images` | **3** | 0.2% |
 | `Movies` | **2** | 0.2% |
 | `Animation` | **1** | 0.1% |

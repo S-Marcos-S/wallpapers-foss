@@ -1,6 +1,6 @@
 {
-  "id": "notif_1795353702",
-  "title": "Goku Black e Wukong chegaram!",
+  "id": "notif_1795380627",
+  "title": "Goku Black & Wukong chegaram!",
   "message": "30 novos wallpapers épicos de anime e games",
   "count": 30,
   "wallpaper_ids": [
@@ -15,13 +15,11 @@
     "tg_44409",
     "tg_44407",
     "tg_44406",
-    "tg_44592",
     "tg_45059",
     "tg_45174",
     "tg_46199",
     "tg_45970",
     "tg_45969",
-    "tg_45968",
     "tg_45965",
     "tg_45925",
     "tg_45924",
@@ -33,8 +31,10 @@
     "tg_45913",
     "tg_45866",
     "tg_45771",
-    "tg_45766"
+    "tg_45766",
+    "tg_45762",
+    "tg_45708"
   ],
-  "timestamp": 1795353702690,
+  "timestamp": 1795380627909,
   "generated_by": "gemini"
 }
