@@ -41,7 +41,7 @@ Coleção de papéis de parede projetados para celulares.
 <!-- START_WALLPAPER_STATS -->
 ## Painel de Estatísticas Diárias do Repositório
 
-> **Última atualização:** 22/11/2026 às 09:22 (Horário de Brasília) (`2026-11-22 12:22 UTC`)
+> **Última atualização:** 22/11/2026 às 10:21 (Horário de Brasília) (`2026-11-22 13:21 UTC`)
 
 ### 📊 Progresso da Curadoria de Wallpapers em Alta Definição
 
@@ -78,19 +78,19 @@ Coleção de papéis de parede projetados para celulares.
 
 | Categoria | Quantidade | Proporção |
 | :--- | :---: | :---: |
-| `Oled` | **295** | 23.9% |
+| `Oled` | **294** | 23.8% |
 | `Anime` | **190** | 15.4% |
 | `Abstract` | **155** | 12.5% |
 | `Nature` | **124** | 10.0% |
-| `Fantasy` | **93** | 7.5% |
-| `Animals` | **82** | 6.6% |
+| `Fantasy` | **92** | 7.4% |
+| `Animals` | **83** | 6.7% |
 | `Cars` | **77** | 6.2% |
 | `Minimal` | **67** | 5.4% |
 | `Games` | **62** | 5.0% |
 | `Space` | **50** | 4.0% |
 | `City` | **17** | 1.4% |
 | `Live` | **10** | 0.8% |
-| `Cyberpunk` | **8** | 0.6% |
+| `Cyberpunk` | **9** | 0.7% |
 | `Images` | **3** | 0.2% |
 | `Movies` | **2** | 0.2% |
 | `Animation` | **1** | 0.1% |
