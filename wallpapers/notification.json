@@ -1,8 +1,8 @@
 {
-  "id": "notif_1795450134",
-  "title": "Sun Wukong chegou ao app!",
-  "message": "Confira 17 novos wallpapers de games, animes e OLED!",
-  "count": 17,
+  "id": "notif_1795485495",
+  "title": "Goku Black & Sun Wukong!",
+  "message": "31 novos wallpapers épicos de anime e games",
+  "count": 31,
   "wallpaper_ids": [
     "tg_43664",
     "tg_43663",
@@ -15,13 +15,27 @@
     "tg_44409",
     "tg_44407",
     "tg_44406",
-    "tg_45059",
     "tg_45174",
     "tg_46199",
     "tg_45970",
     "tg_45969",
-    "tg_45965"
+    "tg_45965",
+    "tg_45925",
+    "tg_45924",
+    "tg_45923",
+    "tg_45922",
+    "tg_45921",
+    "tg_45920",
+    "tg_45914",
+    "tg_45913",
+    "tg_45866",
+    "tg_45771",
+    "tg_45766",
+    "tg_45762",
+    "tg_45708",
+    "tg_45706",
+    "tg_45484"
   ],
-  "timestamp": 1795450134891,
+  "timestamp": 1795485495824,
   "generated_by": "gemini"
 }
