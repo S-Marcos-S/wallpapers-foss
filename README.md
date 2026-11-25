@@ -41,7 +41,7 @@ Coleção de papéis de parede projetados para celulares.
 <!-- START_WALLPAPER_STATS -->
 ## Painel de Estatísticas Diárias do Repositório
 
-> **Última atualização:** 24/11/2026 às 20:29 (Horário de Brasília) (`2026-11-24 23:29 UTC`)
+> **Última atualização:** 25/11/2026 às 11:00 (Horário de Brasília) (`2026-11-25 14:00 UTC`)
 
 ### 📊 Progresso da Curadoria de Wallpapers em Alta Definição
 
@@ -55,9 +55,9 @@ Coleção de papéis de parede projetados para celulares.
 
 | Diretório / Recurso | Tamanho em Gigabytes | Tamanho em Megabytes | Arquivos |
 | :--- | :---: | :---: | :---: |
-| **Wallpapers em Alta Resolução (`wallpapers/full/`)** | **3.584 GB** | 3670.2 MB | 1267 |
-| **Miniaturas Otimizadas (`wallpapers/thumbnails/`)** | **0.048 GB** | 49.3 MB | 1282 |
-| **Total do Repositório** | **3.640 GB** | **3727.9 MB** | 2651 |
+| **Wallpapers em Alta Resolução (`wallpapers/full/`)** | **3.635 GB** | 3722.0 MB | 1282 |
+| **Miniaturas Otimizadas (`wallpapers/thumbnails/`)** | **0.049 GB** | 49.7 MB | 1297 |
+| **Total do Repositório** | **3.691 GB** | **3780.1 MB** | 2681 |
 
 ### Status das Descrições e Classificação por IA
 
