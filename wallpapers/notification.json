@@ -1,7 +1,7 @@
 {
-  "id": "notif_1795777853",
-  "title": "Wukong e Dragon Ball chegaram!",
-  "message": "28 novos wallpapers épicos para a sua tela. Vem ver!",
+  "id": "notif_1795791415",
+  "title": "Wukong & Goku Black no app!",
+  "message": "Explore 28 novos wallpapers de Anime e Games!",
   "count": 28,
   "wallpaper_ids": [
     "tg_43664",
@@ -33,6 +33,6 @@
     "tg_45762",
     "tg_45706"
   ],
-  "timestamp": 1795777853912,
+  "timestamp": 1795791415837,
   "generated_by": "gemini"
 }
