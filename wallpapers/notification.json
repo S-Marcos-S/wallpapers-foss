@@ -1,7 +1,7 @@
 {
-  "id": "notif_1795819978",
-  "title": "Drop épico: Wukong & Animes!",
-  "message": "28 novos wallpapers com Sun Wukong, Goku Black e mais!",
+  "id": "notif_1795862833",
+  "title": "Dragon Ball e Wukong chegaram!",
+  "message": "28 novos wallpapers épicos de anime e games",
   "count": 28,
   "wallpaper_ids": [
     "tg_43664",
@@ -33,6 +33,6 @@
     "tg_45762",
     "tg_45706"
   ],
-  "timestamp": 1795819978864,
+  "timestamp": 1795862833155,
   "generated_by": "gemini"
 }
